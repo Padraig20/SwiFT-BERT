@@ -826,32 +826,14 @@ class SwinTransformer4D(nn.Module):
         return x
 
 
-    def forward(self, x):
+    def forward(self, x): 
         if self.to_float:
-            # converting tensor to float
             x = x.float()
-        
-        # (b, c, h, w, d, t)
-        x0 = self.patch_embed(x)
-        x0 = self.pos_drop(x0)
-        x0_out = self.proj_out(x0, normalize=True)
-        
-        # assumption len depths = 4 (stages)
-                
-        x1 = self.pos_embeds[0](x0)
-        x1 = self.layers[0](x1.contiguous())
-        x1_out = self.proj_out(x1, normalize=True)
-        
-        x2 = self.pos_embeds[1](x1)
-        x2 = self.layers[1](x2.contiguous())
-        x2_out = self.proj_out(x2, normalize=True)
-        
-        x3 = self.pos_embeds[2](x2)
-        x3 = self.layers[2](x3.contiguous())
-        x3_out = self.proj_out(x3, normalize=True)
-        
-        x4 = self.pos_embeds[3](x3)
-        x4 = self.layers[3](x4.contiguous())
-        x4_out = self.proj_out(x4, normalize=True)
-        
-        return x4_out
+        x = self.patch_embed(x)
+        x = self.pos_drop(x)  # (b, c, h, w, d, t)
+
+        for i in range(self.num_layers):
+            x = self.pos_embeds[i](x)
+            x = self.layers[i](x.contiguous())
+
+        return x
