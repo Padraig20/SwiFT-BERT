@@ -33,9 +33,9 @@ class LitClassifier(pl.LightningModule):
         self.save_hyperparameters(kwargs) # save hyperparameters except data_module (data_module cannot be pickled as a checkpoint)
        
         # you should define target_values at the Dataset classes
-        if 'emotion' in self.hparams.downstream_task:
-            scaler = None
-        elif self.hparams.label_scaling_method == 'standardization':
+        #if 'emotion' in self.hparams.downstream_task:
+        #    scaler = None
+        if self.hparams.label_scaling_method == 'standardization':
             target_values = data_module.train_dataset.target_values
             scaler = StandardScaler()
             normalized_target_values = scaler.fit_transform(target_values)
