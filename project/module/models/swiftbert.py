@@ -191,6 +191,8 @@ class SwiFTBERT(nn.Module):
         decoder_input = self.avgpool(decoder_input.transpose(1, 2))  # b c 1
         decoder_input = torch.flatten(decoder_input, 1)
         
+        print(decoder_input.shape)
+        
         #b, c, h, w, d, t = hidden_states_out.shape
         #decoder_input = hidden_states_out.reshape(b, t, -1) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
         
