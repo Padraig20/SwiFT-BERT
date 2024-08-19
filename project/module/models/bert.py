@@ -10,7 +10,7 @@ class BERT(nn.Module):
             num_hidden_layers=6,
             num_attention_heads=8,
             intermediate_size=2048,
-            max_position_embeddings=512,
+            max_position_embeddings=hidden_dim,
             hidden_dropout_prob=0.1,
             attention_probs_dropout_prob=0.1,
             vocab_size=30522
