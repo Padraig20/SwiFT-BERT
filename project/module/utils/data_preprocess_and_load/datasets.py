@@ -229,11 +229,12 @@ class HBN(BaseDataset):
             sex, target = subject_dict[subject_name]
             subject_path = os.path.join(img_root, subject_name)
             num_frames = len(glob.glob(os.path.join(subject_path,'frame_*'))) # voxel mean & std
+            num_frames = 255 # TODO CHANGE LATER
             session_duration = num_frames - self.sample_duration + 1
 
             for start_frame in range(0, session_duration, self.stride):
-                data_tuple = (i, subject_name, subject_path, start_frame, self.sample_duration, num_frames, target, sex)
-                print(target)
+                data_tuple = (i, subject_name, subject_path, start_frame, self.sample_duration, num_frames, target[start_frame:min(start_frame+self.sample_duration,num_frames)], sex)
+                #print(start_frame, min(start_frame+self.sample_duration,num_frames), target[start_frame:min(start_frame+self.sample_duration,num_frames)])
                 data.append(data_tuple)
 
         # train dataset

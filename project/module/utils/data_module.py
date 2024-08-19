@@ -169,7 +169,7 @@ class fMRIDataModule(pl.LightningDataModule):
                 if subject in meta_task['SUBJECT_ID'].values:
                     sex = meta_task[meta_task["SUBJECT_ID"] == subject]['Sex'].values[0]
                     target = meta_task[meta_task["SUBJECT_ID"] == subject][['Anger', 'Happy', 'Fear', 'Sad', 'Excited']].values
-                    target = target[np.argsort(meta_task[meta_task["SUBJECT_ID"] == subject]['frame'].values)][:self.hparams.sequence_length]
+                    target = target[np.argsort(meta_task[meta_task["SUBJECT_ID"] == subject]['frame'].values)]
                     final_dict[str(subject)] = (sex, target)
                 else:
                     continue
