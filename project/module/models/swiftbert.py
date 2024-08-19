@@ -11,6 +11,7 @@ from monai.utils import optional_import
 from monai.utils.deprecate_utils import deprecated_arg
 
 from .SwiFT.swin4d_transformer_ver7 import SwinTransformer4D
+from .bert import BERT
 
 rearrange, _ = optional_import("einops", name="rearrange")
 
@@ -113,6 +114,8 @@ class SwiFTBERT(nn.Module):
         dims = h//48 * w//48 * d//48 * feature_size*8 # TODO: verify this
         
         self.mlp = SimpleMLP(dims, mlp_dim, target_dim)
+        
+        self.bert = BERT(target_dim, dims)
 
     def load_from(self, weights):
         with torch.no_grad():
@@ -186,6 +189,6 @@ class SwiFTBERT(nn.Module):
                 
         decoder_input = hidden_states_out.reshape(b, t, -1) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
         
-        logits = self.mlp(decoder_input) # (b, t, e) = [16, 20, 5]
+        logits = self.bert(decoder_input) # (b, t, e) = [16, 20, 5]
 
         return logits
