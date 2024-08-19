@@ -176,11 +176,11 @@ class SwiFTBERT(nn.Module):
 
     def forward(self, x_in, group_in=None):
         
-        print(x_in.shape)
+        #print(x_in.shape)
                 
         hidden_states_out = self.swinViT(x_in) # (b, c, h, w, d, t) = [16, 288, 2, 2, 2, 20]
         
-        print(hidden_states_out.shape)
+        #print(hidden_states_out.shape)
         
         b, c, h, w, d, t = hidden_states_out.shape
                 

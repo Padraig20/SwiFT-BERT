@@ -163,110 +163,69 @@ class LitClassifier(pl.LightningModule):
         return loss
 
     def _evaluate_metrics(self, subj_array, total_out, mode):
-        # print('total_out.device',total_out.device)
-        # (total iteration/world_size) numbers of samples are passed into _evaluate_metrics.
+        
+        """
+        Evaluates the model's performance on an emotion task, where targets are 2D vectors (T x E).
+    
+        Parameters:
+        - total_out: The output tensor of the model containing predictions and targets.
+        - subj_array: Array indicating the subject corresponding to each sample.
+        - subjects: List of unique subjects.
+        - scaler: Scaler object used for label scaling (e.g., standardization or minmax).
+        - mode: The mode of the evaluation (e.g., 'train', 'val', 'test').
+        """
+        
         subjects = np.unique(subj_array)
 
-
-        if 'emotion' in self.hparams.downstream_task:
-            subj_avg_logits = torch.empty(len(subjects), total_out.shape[1], total_out.shape[2], device=total_out.device) 
-            subj_targets = torch.empty(len(subjects), total_out.shape[1], total_out.shape[2], device=total_out.device) 
-            for idx, subj in enumerate(subjects):
-                subj_logits = total_out[subj_array == subj, :, :, 0]  # logits shape: (batch, T, E)
-                subj_avg_logits[idx, :, :] = torch.mean(subj_logits, axis=0)  # average over the batch for each subject
-                subj_targets[idx, :, :] = total_out[subj_array == subj, :, :, 1][0, :, :]  # same for targets
-
-            # Calculate MSE and MAE
-            mse = F.mse_loss(subj_avg_logits, subj_targets)
-            mae = F.l1_loss(subj_avg_logits, subj_targets)
+        subj_avg_logits = []
+        subj_targets = []
+    
+        # calculate average logits and target values for each subject
+        for subj in subjects:
+            subj_logits = total_out[subj_array == subj, :, 0]  # shape: [T, E]
+            subj_target = total_out[subj_array == subj, :, 1]  # shape: [T, E]
         
-            # Pearson Correlation Coefficient
-            pearson = PearsonCorrCoef().to(total_out.device)
-            pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
-
-            # R² Score
-            r2score = R2Score().to(total_out.device)
-            r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
-
-            self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
-            self.log(f"{mode}_r2", r2_output, sync_dist=True)
-            self.log(f"{mode}_mse", mse, sync_dist=True)
-            self.log(f"{mode}_mae", mae, sync_dist=True)
-            self.log(f"{mode}_adjusted_mse", mse, sync_dist=True)
-            self.log(f"{mode}_adjusted_mae", mae, sync_dist=True)
+            avg_logits = torch.mean(subj_logits, dim=0)  # average over emotions E
+            avg_target = torch.mean(subj_target, dim=0)
         
-        # meta data prediction
+            subj_avg_logits.append(avg_logits)
+            subj_targets.append(avg_target)
+    
+        # lists -> tensors
+        subj_avg_logits = torch.stack(subj_avg_logits).to(total_out.device)  # Shape: [num_subjects, E]
+        subj_targets = torch.stack(subj_targets).to(total_out.device)  # Shape: [num_subjects, E]
+    
+        # losses
+        mse = F.mse_loss(subj_avg_logits, subj_targets)
+        mae = F.l1_loss(subj_avg_logits, subj_targets)
+    
+        # reconstruct to original scale if necessary
+        if self.hparams.label_scaling_method == 'standardization': # default
+            scale = self.scaler.scale_
+            mean = self.scaler.mean_
+            adjusted_mse = F.mse_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+            adjusted_mae = F.l1_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+        elif self.hparams.label_scaling_method == 'minmax':
+            data_max = self.scaler.data_max_
+            data_min = self.scaler.data_min_
+            adjusted_mse = F.mse_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
+            adjusted_mae = F.l1_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
         else:
-            subj_avg_logits = []
-            subj_targets = []
-            for subj in subjects:
-                subj_logits = total_out[subj_array == subj,0] 
-                subj_avg_logits.append(torch.mean(subj_logits).item())
-                subj_targets.append(total_out[subj_array == subj,1][0].item())
-            subj_avg_logits = torch.tensor(subj_avg_logits, device = total_out.device) 
-            subj_targets = torch.tensor(subj_targets, device = total_out.device) 
-        
-            if self.hparams.downstream_task_type == 'classification' or self.hparams.scalability_check:
-                if self.hparams.adjust_thresh:
-                    # move threshold to maximize balanced accuracy
-                    best_bal_acc = 0
-                    best_thresh = 0
-                    for thresh in np.arange(-5, 5, 0.01):
-                        bal_acc = balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=thresh).int().cpu())
-                        if bal_acc > best_bal_acc:
-                            best_bal_acc = bal_acc
-                            best_thresh = thresh
-                    self.log(f"{mode}_best_thresh", best_thresh, sync_dist=True)
-                    self.log(f"{mode}_best_balacc", best_bal_acc, sync_dist=True)
-                    fpr, tpr, thresholds = roc_curve(subj_targets.cpu(), subj_avg_logits.cpu())
-                    idx = np.argmax(tpr - fpr)
-                    youden_thresh = thresholds[idx]
-                    acc_func = BinaryAccuracy().to(total_out.device)
-                    self.log(f"{mode}_youden_thresh", youden_thresh, sync_dist=True)
-                    self.log(f"{mode}_youden_balacc", balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=youden_thresh).int().cpu()), sync_dist=True)
-
-                    if mode == 'valid':
-                        self.threshold = youden_thresh
-                    elif mode == 'test':
-                        bal_acc = balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=self.threshold).int().cpu())
-                        self.log(f"{mode}_balacc_from_valid_thresh", bal_acc, sync_dist=True)
-                else:
-                    acc_func = BinaryAccuracy().to(total_out.device)
-
-                auroc_func = BinaryAUROC().to(total_out.device)
-                acc = acc_func((subj_avg_logits >= 0).int(), subj_targets)
-                #print((subj_avg_logits>=0).int().cpu())
-                #print(subj_targets.cpu())
-                bal_acc_sk = balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=0).int().cpu())
-                auroc = auroc_func(torch.sigmoid(subj_avg_logits), subj_targets)
-                self.log(f"{mode}_acc", acc, sync_dist=True)
-                self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
-                self.log(f"{mode}_AUROC", auroc, sync_dist=True)
-
-            # regression target is normalized
-            elif self.hparams.downstream_task_type == 'regression':          
-                mse = F.mse_loss(subj_avg_logits, subj_targets)
-                mae = F.l1_loss(subj_avg_logits, subj_targets)
-
-                # reconstruct to original scale
-                if self.hparams.label_scaling_method == 'standardization': # default
-                    adjusted_mse = F.mse_loss(subj_avg_logits * self.scaler.scale_[0] + self.scaler.mean_[0], subj_targets * self.scaler.scale_[0] + self.scaler.mean_[0])
-                    adjusted_mae = F.l1_loss(subj_avg_logits * self.scaler.scale_[0] + self.scaler.mean_[0], subj_targets * self.scaler.scale_[0] + self.scaler.mean_[0])
-                elif self.hparams.label_scaling_method == 'minmax':
-                    adjusted_mse = F.mse_loss(subj_avg_logits * (self.scaler.data_max_[0] - self.scaler.data_min_[0]) + self.scaler.data_min_[0], subj_targets * (self.scaler.data_max_[0] - self.scaler.data_min_[0]) + self.scaler.data_min_[0])
-                    adjusted_mae = F.l1_loss(subj_avg_logits * (self.scaler.data_max_[0] - self.scaler.data_min_[0]) + self.scaler.data_min_[0], subj_targets * (self.scaler.data_max_[0] - self.scaler.data_min_[0]) + self.scaler.data_min_[0])
-                pearson = PearsonCorrCoef().to(total_out.device)
-                prearson_coef = pearson(subj_avg_logits, subj_targets)
-                
-                r2score = R2Score()
-                r2_output = r2score(subj_avg_logits, subj_targets)
-
-                self.log(f"{mode}_corrcoef", prearson_coef, sync_dist=True)
-                self.log(f"{mode}_r2", r2_output, sync_dist=True)
-                self.log(f"{mode}_mse", mse, sync_dist=True)
-                self.log(f"{mode}_mae", mae, sync_dist=True)
-                self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True) 
-                self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True) 
+            adjusted_mse = mse
+            adjusted_mae = mae
+    
+        pearson = PearsonCorrCoef().to(total_out.device)
+        pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
+    
+        r2score = R2Score().to(total_out.device)
+        r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
+    
+        self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
+        self.log(f"{mode}_r2", r2_output, sync_dist=True)
+        self.log(f"{mode}_mse", mse, sync_dist=True)
+        self.log(f"{mode}_mae", mae, sync_dist=True)
+        self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True)
+        self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True)
 
     def training_step(self, batch, batch_idx):
         loss = self._calculate_loss(batch, batch_idx, mode="train") 
