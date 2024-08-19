@@ -77,7 +77,7 @@ def cli_main():
     # ------------ data -------------
     data_module = Dataset(**vars(args))
     pl.seed_everything(args.seed)
-
+    
     # ------------ logger -------------
     if args.loggername == "tensorboard":
         # logger = True  # tensor board is a default logger of Trainer class
