@@ -19,7 +19,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from monai.networks.blocks import UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
+from .mlp import SimpleMLP
 from monai.utils import optional_import
 from monai.utils.deprecate_utils import deprecated_arg
 
@@ -28,10 +28,10 @@ from .SwiFT.swin4d_transformer_ver7 import SwinTransformer4D
 rearrange, _ = optional_import("einops", name="rearrange")
 
 __all__ = [
-    "SwinUNETR",
+    "SwiFTBERT",
 ]
 
-class SwinUNETR(nn.Module):
+class SwiFTBERT(nn.Module):
     """
     Swin UNETR based on: "Hatamizadeh et al.,
     Swin UNETR: Swin Transformers for Semantic Segmentation of Brain Tumors in MRI Images
@@ -52,6 +52,8 @@ class SwinUNETR(nn.Module):
         img_size: Sequence[int] | int,
         in_channels: int,
         out_channels: int,
+        target_dim: int = 5,
+        mlp_dim: int = 512,
         patch_size: int = (6, 6, 6, 1),
         window_size: int = (4, 4, 4, 4),
         first_window_size: int = (4, 4, 4, 4),
@@ -108,17 +110,8 @@ class SwinUNETR(nn.Module):
 
         self.normalize = normalize
         
-        # sample inoput shape
-        #in_channels = 1
-        #feature_size = 36
-        #window_size = (4, 4, 4, 4)
-        #patch_size = (6, 6, 6, 1)
-        #depths = (2, 2, 6, 2)
-        #num_heads = (3, 6, 12, 24)
-        #c_multiplier = 2
-        
         self.swinViT = SwinTransformer4D(
-            in_chans=in_channels, # in_channels is always 1 for our task
+            in_chans=in_channels,
             embed_dim=feature_size,
             window_size=window_size,
             patch_size=patch_size,
@@ -133,13 +126,11 @@ class SwinUNETR(nn.Module):
             last_layer_full_MSA=last_layer_full_MSA,
             to_float=to_float,
         )
+                
+        h, w, d, t = img_size
+        dims = h//48 * w//48 * d//48 * feature_size*8 # TODO: verify this
         
-        from .mlp import SimpleMLP
-        
-        dims = 2*2*2*288 # TODO: change this to a dynamic value, HxWxDxC
-        emotion_dim = 5
-        
-        self.mlp = SimpleMLP(dims, 512, emotion_dim)
+        self.mlp = SimpleMLP(dims, mlp_dim, target_dim)
 
     def load_from(self, weights):
         with torch.no_grad():

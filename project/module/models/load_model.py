@@ -1,4 +1,4 @@
-from .swinunetr_og import SwinUNETR
+from .swiftbert import SwiFTBERT
 
 def load_model(model_name, hparams=None):
     #number of transformer stages
@@ -11,11 +11,13 @@ def load_model(model_name, hparams=None):
 
     print(to_float)
 
-    if model_name.lower() == "swinunetr":
-        net = SwinUNETR(
+    if model_name.lower() == "swiftbert":
+        net = SwiFTBERT(
             img_size=hparams.img_size,
             in_channels=hparams.in_chans,
             out_channels=hparams.out_chans,
+            target_dim=hparams.target_dim,
+            mlp_dim=hparams.mlp_dim,
             patch_size=hparams.patch_size,
             depths=hparams.depths,
             window_size=hparams.window_size,
