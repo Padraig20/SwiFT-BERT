@@ -47,7 +47,7 @@ class LitClassifier(pl.LightningModule):
             print(f'target_max:{scaler.data_max_[0]},target_min:{scaler.data_min_[0]}')
         self.scaler = scaler
 
-        self.model = load_model("swinunetr", self.hparams)
+        self.model = load_model("swiftbert", self.hparams)
         
         # HEAD
         self.output_head = nn.Identity()
