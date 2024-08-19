@@ -36,52 +36,21 @@ class BaseDataset(Dataset):
         self.kwargs = kwargs
     
     def load_sequence(self, subject_path, start_frame, sample_duration, num_frames=None): 
-        if self.contrastive:
-            num_frames = len(os.listdir(subject_path)) - 2
-            y = []
+        y = []
+        if self.shuffle_time_sequence: # shuffle whole sequences
+            load_fnames = [f'frame_{frame}.pt' for frame in random.sample(list(range(0,num_frames)),sample_duration//self.stride_within_seq)]
+        else:
             load_fnames = [f'frame_{frame}.pt' for frame in range(start_frame, start_frame+sample_duration,self.stride_within_seq)]
-            if self.with_voxel_norm:
-                load_fnames += ['voxel_mean.pt', 'voxel_std.pt']
-
-            for fname in load_fnames:
-                img_path = os.path.join(subject_path, fname)
-                y_loaded = torch.load(img_path).unsqueeze(0)
-                y.append(y_loaded)
-            y = torch.cat(y, dim=4)
             
-            random_y = []
-            
-            full_range = np.arange(0, num_frames-sample_duration+1)
-            # exclude overlapping sub-sequences within a subject
-            exclude_range = np.arange(start_frame-sample_duration, start_frame+sample_duration)
-            available_choices = np.setdiff1d(full_range, exclude_range)
-            random_start_frame = np.random.choice(available_choices, size=1, replace=False)[0]
-            load_fnames = [f'frame_{frame}.pt' for frame in range(random_start_frame, random_start_frame+sample_duration,self.stride_within_seq)]
-            if self.with_voxel_norm:
-                load_fnames += ['voxel_mean.pt', 'voxel_std.pt']
-            for fname in load_fnames:
-                img_path = os.path.join(subject_path, fname)
-                y_loaded = torch.load(img_path).unsqueeze(0)
-                random_y.append(y_loaded)
-            random_y = torch.cat(random_y, dim=4)
-            return (y, random_y)
-
-        else: # without contrastive learning
-            y = []
-            if self.shuffle_time_sequence: # shuffle whole sequences
-                load_fnames = [f'frame_{frame}.pt' for frame in random.sample(list(range(0,num_frames)),sample_duration//self.stride_within_seq)]
-            else:
-                load_fnames = [f'frame_{frame}.pt' for frame in range(start_frame, start_frame+sample_duration,self.stride_within_seq)]
-            
-            if self.with_voxel_norm:
-                load_fnames += ['voxel_mean.pt', 'voxel_std.pt']
+        if self.with_voxel_norm:
+            load_fnames += ['voxel_mean.pt', 'voxel_std.pt']
                 
-            for fname in load_fnames:
-                img_path = os.path.join(subject_path, fname)
-                y_i = torch.load(img_path).unsqueeze(0)
-                y.append(y_i)
-            y = torch.cat(y, dim=4)
-            return y
+        for fname in load_fnames:
+            img_path = os.path.join(subject_path, fname)
+            y_i = torch.load(img_path).unsqueeze(0)
+            y.append(y_i)
+        y = torch.cat(y, dim=4)
+        return y
 
     def __len__(self):
         return  len(self.data)
