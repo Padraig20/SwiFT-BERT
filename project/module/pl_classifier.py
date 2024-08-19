@@ -405,7 +405,7 @@ class LitClassifier(pl.LightningModule):
         subj_test = np.array(subj_test)
         total_out_test = torch.cat(out_test_list, dim=0)
         
-        self._save_predictions(subj_test, total_out_test, mode="test") 
+        #self._save_predictions(subj_test, total_out_test, mode="test") 
         self._evaluate_metrics(subj_test, total_out_test, mode="test")
 
     def on_test_epoch_start(self) -> None:
