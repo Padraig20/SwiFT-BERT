@@ -93,6 +93,8 @@ class SwiFTBERT(nn.Module):
 
         self.normalize = normalize
         
+        self.avgpool = nn.AdaptiveAvgPool1d(1)
+        
         self.swinViT = SwinTransformer4D(
             in_chans=in_channels,
             embed_dim=feature_size,
@@ -185,12 +187,14 @@ class SwiFTBERT(nn.Module):
         
         #print(hidden_states_out.shape)
         
-        b, c, h, w, d, t = hidden_states_out.shape
-                
-        decoder_input = hidden_states_out.reshape(b, t, -1) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
+        decoder_input = hidden_states_out.flatten(start_dim=2).transpose(1, 2)  # b l c
+        decoder_input = self.avgpool(decoder_input.transpose(1, 2))  # b c 1
+        decoder_input = torch.flatten(decoder_input, 1)
         
-        #logits = self.bert(decoder_input) # (b, t, e) = [16, 20, 5]
-
-        logits = self.mlp(decoder_input) # (b, t, e) = [16, 20, 5]
+        #b, c, h, w, d, t = hidden_states_out.shape
+        #decoder_input = hidden_states_out.reshape(b, t, -1) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
+        
+        logits = self.bert(decoder_input) # (b, t, e) = [16, 20, 5]
+        #logits = self.mlp(decoder_input) # (b, t, e) = [16, 20, 5]
 
         return logits
