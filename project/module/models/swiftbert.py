@@ -189,6 +189,8 @@ class SwiFTBERT(nn.Module):
                 
         decoder_input = hidden_states_out.reshape(b, t, -1) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
         
-        logits = self.bert(decoder_input) # (b, t, e) = [16, 20, 5]
+        #logits = self.bert(decoder_input) # (b, t, e) = [16, 20, 5]
+
+        logits = self.mlp(decoder_input) # (b, t, e) = [16, 20, 5]
 
         return logits
