@@ -35,9 +35,11 @@ class LitClassifier(pl.LightningModule):
         # you should define target_values at the Dataset classes
         #if 'emotion' in self.hparams.downstream_task:
         #    scaler = None
+        print("-"*50)
+        print(f"Scaling: {self.hparams.label_scaling_method}")
+        print("-"*50)
         if self.hparams.label_scaling_method == 'standardization':
             target_values = data_module.train_dataset.target_values
-            print(target_values)
             scaler = StandardScaler()
             normalized_target_values = scaler.fit_transform(target_values)
             print(f'target_mean:{scaler.mean_[0]}, target_std:{scaler.scale_[0]}')
