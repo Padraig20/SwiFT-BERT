@@ -2,7 +2,7 @@ import torch.nn as nn
 from transformers import BertModel, BertConfig
 
 class BERT(nn.Module):
-    def __init__(self, num_emotions, hidden_dim):
+    def __init__(self, num_emotions, hidden_dim, seq_len):
         super(BERT, self).__init__()
         
         custom_config = BertConfig(
@@ -10,7 +10,7 @@ class BERT(nn.Module):
             num_hidden_layers=6,
             num_attention_heads=8,
             intermediate_size=2048,
-            max_position_embeddings=hidden_dim,
+            max_position_embeddings=seq_len,
             hidden_dropout_prob=0.1,
             attention_probs_dropout_prob=0.1,
             vocab_size=30522

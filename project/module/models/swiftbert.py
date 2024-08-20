@@ -117,7 +117,7 @@ class SwiFTBERT(nn.Module):
         
         self.mlp = SimpleMLP(dims, mlp_dim, target_dim)
         
-        self.bert = BERT(target_dim, dims)
+        self.bert = BERT(target_dim, dims, t)
 
     def load_from(self, weights):
         with torch.no_grad():
