@@ -118,6 +118,8 @@ class SwiFTBERT(nn.Module):
         self.mlp = SimpleMLP(dims, mlp_dim, target_dim)
         
         self.bert = BERT(target_dim, dims, t)
+        
+        self.fc = nn.Linear(dims, target_dim)
 
     def load_from(self, weights):
         with torch.no_grad():
@@ -192,7 +194,8 @@ class SwiFTBERT(nn.Module):
         #b, c, h, w, d, t = hidden_states_out.shape
         #decoder_input = hidden_states_out.reshape(b, t, -1) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
         
-        logits = self.bert(decoder_input) # (b, t, e) = [16, 20, 5]
+        #logits = self.bert(decoder_input) # (b, t, e) = [16, 20, 5]
         #logits = self.mlp(decoder_input) # (b, t, e) = [16, 20, 5]
+        logits = self.fc(decoder_input) # (b, t, e) = [16, 20, 5]
 
         return logits
