@@ -235,7 +235,6 @@ class HBN(BaseDataset):
             for start_frame in range(0, session_duration, self.stride):
                 data_tuple = (i, subject_name, subject_path, start_frame, self.sample_duration, num_frames, target[start_frame:min(start_frame+self.sample_duration,num_frames)], sex)
                 #print(start_frame, min(start_frame+self.sample_duration,num_frames), target[start_frame:min(start_frame+self.sample_duration,num_frames)])
-                print(data_tuple)
                 data.append(data_tuple)
 
         # train dataset
