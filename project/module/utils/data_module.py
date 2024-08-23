@@ -163,12 +163,12 @@ class fMRIDataModule(pl.LightningDataModule):
             
             meta_data = pd.read_csv(os.path.join(self.hparams.image_path, "metadata", "HBN_meta_emo_1494_240804.csv"))
             if task_name == 'emotion':
-                meta_task = meta_data[['SUBJECT_ID', 'Sex', 'Anger','Happy','Fear','Sad','Excited', 'frame']].dropna()
+                meta_task = meta_data[['SUBJECT_ID', 'Sex', 'Anger','Happy','Fear','Sad','Excited', 'Positive', 'Negative', 'frame']].dropna()
                             
             for subject in os.listdir(img_root):
                 if subject in meta_task['SUBJECT_ID'].values:
                     sex = meta_task[meta_task["SUBJECT_ID"] == subject]['Sex'].values[0]
-                    target = meta_task[meta_task["SUBJECT_ID"] == subject][['Anger', 'Happy', 'Fear', 'Sad', 'Excited']].values
+                    target = meta_task[meta_task["SUBJECT_ID"] == subject][['Anger', 'Happy', 'Fear', 'Sad', 'Excited', 'Positive', 'Negative']].values
                     target = target[np.argsort(meta_task[meta_task["SUBJECT_ID"] == subject]['frame'].values)]
                     final_dict[str(subject)] = (sex, target)
                 else:
