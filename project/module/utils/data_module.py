@@ -164,6 +164,7 @@ class fMRIDataModule(pl.LightningDataModule):
             meta_data = pd.read_csv(os.path.join(self.hparams.image_path, "metadata", "HBN_meta_emo_1494_240804.csv"))
             if task_name == 'emotion':
                 meta_task = meta_data[['SUBJECT_ID', 'Sex', 'Anger','Happy','Fear','Sad','Excited', 'Positive', 'Negative', 'frame']].dropna()
+                meta_task = meta_task[meta_task['frame'] > 4]
                             
             for subject in os.listdir(img_root):
                 if subject in meta_task['SUBJECT_ID'].values:
