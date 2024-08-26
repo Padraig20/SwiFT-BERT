@@ -38,7 +38,7 @@ def load_model(model_name, hparams=None):
         net = BERT(hparams.target_dim,
                    dims,
                    t,
-                   pretrained_model_name='bert-base-uncased',
+                   pretrained_model_name=hparams.bert_pretrained_model_name,
                    num_layers=hparams.bert_num_layers,
                    num_heads=hparams.bert_num_heads,
                    intermediate_size=hparams.bert_intermediate_size,
