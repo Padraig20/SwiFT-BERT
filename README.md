@@ -1,6 +1,6 @@
 <div align="center">    
  
-# SwiFT-UNETR
+# SwiFT-BERT
 
 <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/-Python 3.9+-blue?style=for-the-badge&logo=python&logoColor=white"></a>
 <a href="https://pytorch.org/get-started/locally/"><img alt="PyTorch" src="https://img.shields.io/badge/-PyTorch 1.12+-ee4c2c?style=for-the-badge&logo=pytorch&logoColor=white"></a>
@@ -10,35 +10,33 @@
 
 
 ## 📌&nbsp;&nbsp;Introduction
-This project is a continuing effort after [SwiFT](https://arxiv.org/abs/2307.05916) and [SwiFUN](https://www.biorxiv.org/content/10.1101/2024.05.29.596544v1.full.pdf), adapting SwiFUN to use SwiFT as an encoder model.
+This project is a continuing effort after [SwiFT](https://arxiv.org/abs/2307.05916), using SwiFT for movie-related emotion prediction via the HBN dataset. We use several heads to further proceess the output of SwiFT, including a linear embedding, an MLP and a BERT model.
 
 > Effective usage of this repository requires learning a couple of technologies: [PyTorch](https://pytorch.org), [PyTorch Lightning](https://www.pytorchlightning.ai). Knowledge of some experiment logging frameworks like [Weights&Biases](https://wandb.com), [Neptune](https://neptune.ai) is also recommended.
 
 ## 1. Description
-This repository implements the SwiFUN (SwiFUN). 
+This repository implements the SwiFT-BERT. 
 - Our code offers the following things.
-  - Trainer based on PyTorch Lightning for running the SwiFT integrated SwiFUN.
+  - Trainer based on PyTorch Lightning for running the SwiFT integrated SwiFT-BERT.
   - Data preprocessing/loading pipelines for 4D fMRI datasets.
-
 
 ## 2. How to install
 We highly recommend you to use our conda environment.
 ```bash
 # clone project   
-git clone https://github.com/Padraig20/SwiFUN.git
+git clone https://github.com/Padraig20/SwiFT-BERT.git
 
 # install project   
-cd SwiFUN
+cd SwiFT-BERT
 conda env create -f envs/py39.yaml
 conda activate py39
  ```
 
 ## 3. Architecture
 
-The original SwiFUN adapted the input to use the channel dimension for the timepoints. This way, Swin could be used as an encoder. This project examines the possibility of using raw 4D fMRI data as the input of the encoder, which may or may not yield benefits in terms of model learning.
+This architecture shows how BERT has been used on top of SwiFT. We squeeze the spatial dimensions including the channel dimensions, but retain the timepoints. In this way, we can make use of BERT's contextual understanding. This abstraction can be seen as similar to Named Entity Recognition (NER) from Natural Language Processing (NLP), where each timeframe is classified to be a certain entitiy.
 
-In order to fit the 4D data into the decoder U-NET architecture and to still remain computationally feasible, we chose to add an intermediate global average max pooling layer to squeeze the temporal dimension. This layer is able to learn the best representation of the 4D image among all the separate timepoints.
+![image](https://github.com/user-attachments/assets/3677acc3-cb0e-4657-af54-23c3bbd2b98c)
 
-![image](https://github.com/user-attachments/assets/9a5390d4-b3f5-427b-849f-a457a83b95b1)
 
 
