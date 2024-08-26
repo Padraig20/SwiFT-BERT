@@ -21,9 +21,7 @@ class BERT(nn.Module):
         self.fc = nn.Linear(custom_config.hidden_size, num_emotions)
     
     def forward(self, x): #(b,t,hidden_dim)
-        
-        print(x.shape)
-        
+                
         bert_output = self.bert(inputs_embeds=x)
         
         last_hidden_state = bert_output.last_hidden_state  #(b,t,hidden_dim)
