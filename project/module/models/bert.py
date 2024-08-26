@@ -22,6 +22,8 @@ class BERT(nn.Module):
     
     def forward(self, x): #(b,t,hidden_dim)
         
+        print(x.shape)
+        
         bert_output = self.bert(inputs_embeds=x)
         
         last_hidden_state = bert_output.last_hidden_state  #(b,t,hidden_dim)
