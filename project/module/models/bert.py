@@ -18,6 +18,7 @@ class BERT(nn.Module):
 
         if pretrained_model_name:
             # Load the pretrained BERT model
+            print(f"Loading pretrained model {pretrained_model_name}")
             self.bert = BertModel.from_pretrained(pretrained_model_name)
             # Use the config from the pretrained model
             custom_config = self.bert.config
