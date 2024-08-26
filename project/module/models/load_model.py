@@ -15,7 +15,7 @@ def load_model(model_name, hparams=None):
     print(to_float)
     
     h, w, d, t = hparams.img_size
-    dims = h//48 * w//48 * d//48 * hparams.embe_dim*8 # TODO: verify this
+    dims = h//48 * w//48 * d//48 * hparams.embed_dim*8 # TODO: verify this
 
     if model_name == "swin4d_ver7":
         net = SwinTransformer4D(
