@@ -35,7 +35,16 @@ def load_model(model_name, hparams=None):
             attn_drop_rate=hparams.attn_drop_rate
         )
     elif model_name == "bert":
-        net = BERT(hparams.target_dim, dims, t, pretrained_model_name='bert-base-uncased')
+        net = BERT(hparams.target_dim,
+                   dims,
+                   t,
+                   pretrained_model_name='bert-base-uncased',
+                   num_layers=hparams.bert_num_layers,
+                   num_heads=hparams.bert_num_heads,
+                   intermediate_size=hparams.bert_intermediate_size,
+                   hidden_dropout_prob=hparams.bert_hidden_dropout_prob,
+                   attention_probs_dropout_prob=hparams.bert_attention_probs_dropout_prob,
+                   vocab_size=hparams.bert_vocab_size)
     elif model_name == "mlp":
         net = SimpleMLP(dims, hparams.mlp_dim, hparams.target_dim)
     elif model_name == "linear":    

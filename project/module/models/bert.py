@@ -34,6 +34,9 @@ class BERT(nn.Module):
                 vocab_size=vocab_size
             )
             self.bert = BertModel(config=custom_config)
+            
+        # Print the configuration of the BERT model
+        print(self.bert.config)
 
         # If input_dim does not match hidden_size, add a linear layer to match the dimensions
         if input_dim != custom_config.hidden_size:
