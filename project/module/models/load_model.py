@@ -1,4 +1,7 @@
-from .swiftbert import SwiFTBERT
+from .SwiFT.swin4d_transformer_ver7 import SwinTransformer4D
+from .bert import BERT
+from .mlp import SimpleMLP
+import torch.nn as nn
 
 def load_model(model_name, hparams=None):
     #number of transformer stages
@@ -10,26 +13,33 @@ def load_model(model_name, hparams=None):
         to_float = True
 
     print(to_float)
+    
+    h, w, d, t = hparams.img_size
+    dims = h//48 * w//48 * d//48 * hparams.embe_dim*8 # TODO: verify this
 
-    if model_name.lower() == "swiftbert":
-        net = SwiFTBERT(
+    if model_name == "swin4d_ver7":
+        net = SwinTransformer4D(
             img_size=hparams.img_size,
-            in_channels=hparams.in_chans,
-            out_channels=hparams.out_chans,
-            target_dim=hparams.target_dim,
-            mlp_dim=hparams.mlp_dim,
-            patch_size=hparams.patch_size,
-            depths=hparams.depths,
+            in_chans=hparams.in_chans,
+            embed_dim=hparams.embed_dim,
             window_size=hparams.window_size,
             first_window_size=hparams.first_window_size,
-            drop_rate=hparams.attn_drop_rate,
-            dropout_path_rate=hparams.attn_drop_rate,
-            attn_drop_rate=hparams.attn_drop_rate,
-            feature_size=hparams.embed_dim,
+            patch_size=hparams.patch_size,
+            depths=hparams.depths,
             num_heads=hparams.num_heads,
+            c_multiplier=hparams.c_multiplier,
             last_layer_full_MSA=hparams.last_layer_full_MSA,
-            to_float=to_float,
-            )
+            to_float = to_float,
+            drop_rate=hparams.attn_drop_rate,
+            drop_path_rate=hparams.attn_drop_rate,
+            attn_drop_rate=hparams.attn_drop_rate
+        )
+    elif model_name == "bert":
+        net = BERT(hparams.target_dim, dims, t)
+    elif model_name == "mlp":
+        net = SimpleMLP(dims, hparams.mlp_dim, hparams.target_dim)
+    elif model_name == "linear":    
+        net = nn.Linear(dims, hparams.target_dim)
     else:
         raise NameError(f"{model_name} is a wrong model name")
 

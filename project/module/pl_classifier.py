@@ -45,10 +45,10 @@ class LitClassifier(pl.LightningModule):
             print(f'target_max:{scaler.data_max_[0]},target_min:{scaler.data_min_[0]}')
         self.scaler = scaler
 
-        self.model = load_model("swiftbert", self.hparams)
+        self.model = load_model("swift", self.hparams)
         
         # HEAD
-        self.output_head = nn.Identity()
+        self.output_head = load_model(self.hparams.head, self.hparams)
 
         self.metric = Metrics()
 
@@ -56,7 +56,10 @@ class LitClassifier(pl.LightningModule):
             self.threshold = 0
 
     def forward(self, x):
-        return self.output_head(self.model(x))
+        encoder_output = self.model(x) # (b, c, h, w, d, t) = [16, 288, 2, 2, 2, 20]
+        decoder_input = encoder_output.flatten(start_dim=1, end_dim=4).transpose(1,2) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
+        logits = self.output_head(decoder_input) # (b, t, e) = [16, 20, 7]
+        return logits
     
     def augment(self, img):
         B, C, H, W, D, T = img.shape
@@ -508,6 +511,8 @@ class LitClassifier(pl.LightningModule):
         group.add_argument("--clf_head_version", type=str, default="v1", help="clf head version, v2 has a hidden layer")
         group.add_argument("--attn_drop_rate", type=float, default=0, help="dropout rate of attention layers")
         group.add_argument("--first_window_size", nargs="+", type=int, default=[4, 4, 4, 6], help="window size in the first layer")
+        
+        group.add_argument("--head", type=str, default="linear", help="architecture for decoder head, choose from: linear, mlp, bert")
 
         ## others
         group.add_argument("--scalability_check", action='store_true', help="whether to check scalability")
