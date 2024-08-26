@@ -1,7 +1,7 @@
 from .SwiFT.swin4d_transformer_ver7 import SwinTransformer4D
 from .bert import BERT
 from .mlp import SimpleMLP
-import torch.nn as nn
+from .linear import LinearLayer
 
 def load_model(model_name, hparams=None):
     #number of transformer stages
@@ -39,7 +39,7 @@ def load_model(model_name, hparams=None):
     elif model_name == "mlp":
         net = SimpleMLP(dims, hparams.mlp_dim, hparams.target_dim)
     elif model_name == "linear":    
-        net = nn.Linear(dims, hparams.target_dim)
+        net = LinearLayer(dims, hparams.target_dim)
     else:
         raise NameError(f"{model_name} is a wrong model name")
 
