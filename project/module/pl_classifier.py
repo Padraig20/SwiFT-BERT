@@ -517,7 +517,7 @@ class LitClassifier(pl.LightningModule):
         group.add_argument("--bert_intermediate_size", type=int, default=2048, help="intermediate size in BERT")
         group.add_argument("--bert_hidden_dropout_prob", type=float, default=0.1, help="hidden dropout probability in BERT")
         group.add_argument("--bert_attention_probs_dropout_prob", type=float, default=0.1, help="attention dropout probability in BERT")
-        group.add_argument("--vocab_size", type=int, default=30522, help="vocab size in BERT")
+        group.add_argument("--bert_vocab_size", type=int, default=30522, help="vocab size in BERT")
 
         ## others
         group.add_argument("--scalability_check", action='store_true', help="whether to check scalability")
