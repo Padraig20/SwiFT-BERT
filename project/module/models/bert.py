@@ -2,32 +2,61 @@ import torch.nn as nn
 from transformers import BertModel, BertConfig
 
 class BERT(nn.Module):
-    def __init__(self, num_emotions, hidden_dim, seq_len):
+    def __init__(self,
+                 num_emotions: int,
+                 input_dim: int,    # Dimension of your custom input embeddings
+                 seq_len: int,
+                 num_layers: int = 6,
+                 num_heads: int = 8,
+                 intermediate_size: int = 2048,
+                 hidden_dropout_prob: float = 0.1,
+                 attention_probs_dropout_prob: float = 0.1,
+                 vocab_size: int = 30522,
+                 pretrained_model_name: str = None
+                 ) -> None:
         super(BERT, self).__init__()
-        
-        custom_config = BertConfig(
-            hidden_size=hidden_dim,
-            num_hidden_layers=6,
-            num_attention_heads=8,
-            intermediate_size=2048,
-            max_position_embeddings=seq_len,
-            hidden_dropout_prob=0.1,
-            attention_probs_dropout_prob=0.1,
-            vocab_size=30522
-        )
-        
-        self.bert = BertModel(config=custom_config)
-        
+
+        if pretrained_model_name:
+            # Load the pretrained BERT model
+            self.bert = BertModel.from_pretrained(pretrained_model_name)
+            # Use the config from the pretrained model
+            custom_config = self.bert.config
+        else:
+            # Initialize with custom configuration
+            custom_config = BertConfig(
+                hidden_size=input_dim,
+                num_hidden_layers=num_layers,
+                num_attention_heads=num_heads,
+                intermediate_size=intermediate_size,
+                max_position_embeddings=seq_len,
+                hidden_dropout_prob=hidden_dropout_prob,
+                attention_probs_dropout_prob=attention_probs_dropout_prob,
+                vocab_size=vocab_size
+            )
+            self.bert = BertModel(config=custom_config)
+
+        # If input_dim does not match hidden_size, add a linear layer to match the dimensions
+        if input_dim != custom_config.hidden_size:
+            self.input_projection = nn.Linear(input_dim, custom_config.hidden_size)
+        else:
+            self.input_projection = nn.Identity()  # No transformation needed
+
         self.fc = nn.Linear(custom_config.hidden_size, num_emotions)
-    
-    def forward(self, x): # (b, c, h, w, d, t) = [16, 288, 2, 2, 2, 20]
-        
-        x = x.flatten(start_dim=1, end_dim=4).transpose(1,2) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
-                
-        bert_output = self.bert(inputs_embeds=x) #(b,t,hidden_dim)
-        
-        last_hidden_state = bert_output.last_hidden_state  #(b,t,hidden_dim)
-        
-        output = self.fc(last_hidden_state)  # Shape: (b,t,e)
-        
+
+    def forward(self, x):
+        # Reshape and transpose input as before
+        x = x.flatten(start_dim=1, end_dim=4).transpose(1, 2)
+
+        # Project input to the size expected by BERT if necessary
+        x = self.input_projection(x)
+
+        # Pass through the BERT model
+        bert_output = self.bert(inputs_embeds=x)
+
+        # Get the last hidden state
+        last_hidden_state = bert_output.last_hidden_state
+
+        # Pass the last hidden state through the fully connected layer
+        output = self.fc(last_hidden_state)
+
         return output
