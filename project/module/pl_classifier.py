@@ -56,11 +56,7 @@ class LitClassifier(pl.LightningModule):
             self.threshold = 0
 
     def forward(self, x):
-        encoder_output = self.model(x) # (b, c, h, w, d, t) = [16, 288, 2, 2, 2, 20]
-        decoder_input = encoder_output.flatten(start_dim=1, end_dim=4).transpose(1,2) # (b, t, c*h*w*d) = [16, 20, 288*2*2*2]
-        print(decoder_input.shape)
-        logits = self.output_head(decoder_input) # (b, t, e) = [16, 20, 7]
-        return logits
+        return self.output_head(self.model(x)) # (b, t, e) = [16, 20, 7]
     
     def augment(self, img):
         B, C, H, W, D, T = img.shape
