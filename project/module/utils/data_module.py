@@ -179,7 +179,7 @@ class fMRIDataModule(pl.LightningDataModule):
             if task_name == 'emotionDM':
                 #meta_data = pd.read_csv(os.path.join(self.hparams.image_path, "metadata", "HBN_meta_emo_1494_240804.csv"))
                 meta_data = pd.read_csv("/global/cfs/cdirs/m4750/HBN/0_meta/EmoCodes/emocode_dm_240829.csv") #TODO: change path
-                meta_task = meta_data[['Anger','Happy','Fear','Sad','Excited', 'Positive', 'Negative', 'frame']].dropna()
+                meta_task = meta_data[['Anger_smooth_05','Happy_smooth_05','Fear_smooth_05','Sad_smooth_05','Excited_smooth_05', 'Positive_smooth_05', 'Negative_smooth_05', 'frame']].dropna()
                             
                 for subject in os.listdir(img_root):
                     sex = None # TODO check
