@@ -229,7 +229,7 @@ class HBN(BaseDataset):
             sex, target = subject_dict[subject_name]
             subject_path = os.path.join(img_root, subject_name)
             num_frames = len(glob.glob(os.path.join(subject_path,'frame_*'))) # voxel mean & std
-            num_frames = 250 # TODO remove this line, just for testing
+            #num_frames = 250 # TODO remove this line, just for testing
             session_duration = num_frames - self.sample_duration + 1
 
             for start_frame in range(0, session_duration, self.stride):

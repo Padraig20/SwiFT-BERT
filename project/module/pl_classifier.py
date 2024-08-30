@@ -95,7 +95,7 @@ class LitClassifier(pl.LightningModule):
 
         feature = self.model(fmri)
 
-        if self.hparams.downstream_task == 'emotion':
+        if self.hparams.downstream_task == 'emotion' or self.hparams.downstream_task == 'emotionDM':
             feature = self.model(fmri)
             logits = self.output_head(feature) 
             target = target_value.float() # (b,t,e)
