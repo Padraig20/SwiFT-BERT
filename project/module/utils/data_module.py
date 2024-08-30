@@ -159,21 +159,34 @@ class fMRIDataModule(pl.LightningDataModule):
                     continue
         elif "HBN" in self.hparams.dataset_name:
             if self.hparams.downstream_task == 'emotion': task_name = 'emotion'
+            if self.hparams.downstream_task == 'emotionDM': task_name = 'emotionDM'
             else: raise ValueError('downstream task not supported')
             
-            meta_data = pd.read_csv(os.path.join(self.hparams.image_path, "metadata", "HBN_meta_emo_1494_240804.csv"))
             if task_name == 'emotion':
+                meta_data = pd.read_csv(os.path.join(self.hparams.image_path, "metadata", "HBN_meta_emo_1494_240804.csv"))
                 meta_task = meta_data[['SUBJECT_ID', 'Sex', 'Anger','Happy','Fear','Sad','Excited', 'Positive', 'Negative', 'frame']].dropna()
                             
-            for subject in os.listdir(img_root):
-                if subject in meta_task['SUBJECT_ID'].values:
-                    sex = meta_task[meta_task["SUBJECT_ID"] == subject]['Sex'].values[0]
-                    target = meta_task[meta_task["SUBJECT_ID"] == subject][['Anger', 'Happy', 'Fear', 'Sad', 'Excited', 'Positive', 'Negative']].values
-                    target = target[np.argsort(meta_task[meta_task["SUBJECT_ID"] == subject]['frame'].values)][4:]
-                    #target = target[np.argsort(meta_task[meta_task["SUBJECT_ID"] == subject]['frame'].values)]
+                for subject in os.listdir(img_root):
+                    if subject in meta_task['SUBJECT_ID'].values:
+                        sex = meta_task[meta_task["SUBJECT_ID"] == subject]['Sex'].values[0]
+                        target = meta_task[meta_task["SUBJECT_ID"] == subject][['Anger', 'Happy', 'Fear', 'Sad', 'Excited', 'Positive', 'Negative']].values
+                        target = target[np.argsort(meta_task[meta_task["SUBJECT_ID"] == subject]['frame'].values)][4:]
+                        #target = target[np.argsort(meta_task[meta_task["SUBJECT_ID"] == subject]['frame'].values)]
+                        final_dict[str(subject)] = (sex, target)
+                    else:
+                        continue
+            
+            if task_name == 'emotionDM':
+                #meta_data = pd.read_csv(os.path.join(self.hparams.image_path, "metadata", "HBN_meta_emo_1494_240804.csv"))
+                meta_data = pd.read_csv("/global/cfs/cdirs/m4750/HBN/0_meta/EmoCodes/emocode_dm_240829.csv") #TODO: change path
+                meta_task = meta_data[['Anger','Happy','Fear','Sad','Excited', 'Positive', 'Negative', 'frame']].dropna()
+                            
+                for subject in os.listdir(img_root):
+                    sex = None # TODO check
+                    target = meta_task[['Anger', 'Happy', 'Fear', 'Sad', 'Excited', 'Positive', 'Negative']].values
+                    target = target[np.argsort(meta_task['frame'].values)][4:] #skips first 4 frames
                     final_dict[str(subject)] = (sex, target)
-                else:
-                    continue
+
         else:
             raise NotImplementedError("Dataset not supported")
         
