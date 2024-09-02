@@ -187,8 +187,8 @@ class LitClassifier(pl.LightningModule):
             #avg_logits = torch.mean(subj_logits, dim=0)  # average over emotions E: shape: [T, E] -> [E]
             #avg_target = torch.mean(subj_target, dim=0)
             
-            avg_logits = torch.flatten(subj_logits, dim=0)
-            avg_target = torch.flatten(subj_target, dim=0)
+            avg_logits = torch.flatten(subj_logits)
+            avg_target = torch.flatten(subj_target)
         
             subj_avg_logits.append(avg_logits)
             subj_targets.append(avg_target)
