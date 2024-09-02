@@ -119,7 +119,7 @@ class LitClassifier(pl.LightningModule):
     def _calculate_loss(self, batch, batch_idx, mode):
         subj, logits, target = self._compute_logits(batch, augment_during_training = self.hparams.augment_during_training)
 
-        if 'emotion' in self.hparams.downstream_task:
+        if 'emotion' in self.hparams.downstream_task and self.hparams.downstream_task_type == 'regression':
 
             logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
             target = target.view(target.size(0), -1)  # (batch_size, T * E)
@@ -140,6 +140,19 @@ class LitClassifier(pl.LightningModule):
                 f"{mode}_l1_loss": l1,
                 f"{mode}_within_subj_loss": within_subj_loss.item(),
             }
+        elif 'emotion' in self.hparams.downstream_task and self.hparams.downstream_task_type == 'classification':
+            
+            logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
+            target = target.view(target.size(0), -1)  # (batch_size, T * E)
+            
+            loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
+            acc = self.metric.get_accuracy_binary(logits, target)
+            
+            result_dict = {
+            f"{mode}_loss": loss,
+            f"{mode}_acc": acc,
+            }
+            
         elif self.hparams.downstream_task_type == 'classification' or self.hparams.scalability_check:
             loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
             acc = self.metric.get_accuracy_binary(logits, target.float().squeeze())
@@ -197,37 +210,77 @@ class LitClassifier(pl.LightningModule):
         subj_avg_logits = torch.stack(subj_avg_logits).to(total_out.device)  # Shape: [num_subjects, E]
         subj_targets = torch.stack(subj_targets).to(total_out.device)  # Shape: [num_subjects, E]
     
-        # losses
-        mse = F.mse_loss(subj_avg_logits, subj_targets)
-        mae = F.l1_loss(subj_avg_logits, subj_targets)
+        if self.hparams.downstream_task_type == 'classification' or self.hparams.scalability_check:
+            if self.hparams.adjust_thresh:
+                # move threshold to maximize balanced accuracy
+                best_bal_acc = 0
+                best_thresh = 0
+                for thresh in np.arange(-5, 5, 0.01):
+                    bal_acc = balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=thresh).int().cpu())
+                    if bal_acc > best_bal_acc:
+                        best_bal_acc = bal_acc
+                        best_thresh = thresh
+                self.log(f"{mode}_best_thresh", best_thresh, sync_dist=True)
+                self.log(f"{mode}_best_balacc", best_bal_acc, sync_dist=True)
+                fpr, tpr, thresholds = roc_curve(subj_targets.cpu(), subj_avg_logits.cpu())
+                idx = np.argmax(tpr - fpr)
+                youden_thresh = thresholds[idx]
+                acc_func = BinaryAccuracy().to(total_out.device)
+                self.log(f"{mode}_youden_thresh", youden_thresh, sync_dist=True)
+                self.log(f"{mode}_youden_balacc", balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=youden_thresh).int().cpu()), sync_dist=True)
+
+                if mode == 'valid':
+                    self.threshold = youden_thresh
+                elif mode == 'test':
+                    bal_acc = balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=self.threshold).int().cpu())
+                    self.log(f"{mode}_balacc_from_valid_thresh", bal_acc, sync_dist=True)
+            else:
+                acc_func = BinaryAccuracy().to(total_out.device)
+                
+            auroc_func = BinaryAUROC().to(total_out.device)
+            acc = acc_func((subj_avg_logits >= 0).int(), subj_targets)
+            #print((subj_avg_logits>=0).int().cpu())
+            #print(subj_targets.cpu())
+            bal_acc_sk = balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=0).int().cpu())
+            auroc = auroc_func(torch.sigmoid(subj_avg_logits), subj_targets)
+
+            self.log(f"{mode}_acc", acc, sync_dist=True)
+            self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
+            self.log(f"{mode}_AUROC", auroc, sync_dist=True)
+            
+        else: # regression
+            
+            # losses
+            mse = F.mse_loss(subj_avg_logits, subj_targets)
+            mae = F.l1_loss(subj_avg_logits, subj_targets)
     
-        # reconstruct to original scale if necessary
-        if self.hparams.label_scaling_method == 'standardization': # default
-            scale = self.scaler.scale_
-            mean = self.scaler.mean_
-            adjusted_mse = F.mse_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
-            adjusted_mae = F.l1_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
-        elif self.hparams.label_scaling_method == 'minmax':
-            data_max = self.scaler.data_max_
-            data_min = self.scaler.data_min_
-            adjusted_mse = F.mse_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
-            adjusted_mae = F.l1_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
-        else:
-            adjusted_mse = mse
-            adjusted_mae = mae
+            # reconstruct to original scale if necessary
+            if self.hparams.label_scaling_method == 'standardization': # default
+                scale = self.scaler.scale_
+                mean = self.scaler.mean_
+                adjusted_mse = F.mse_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+                adjusted_mae = F.l1_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+            elif self.hparams.label_scaling_method == 'minmax':
+                data_max = self.scaler.data_max_
+                data_min = self.scaler.data_min_
+                adjusted_mse = F.mse_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
+                adjusted_mae = F.l1_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
+            else:
+                adjusted_mse = mse
+                adjusted_mae = mae
     
-        pearson = PearsonCorrCoef().to(total_out.device)
-        pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
+            pearson = PearsonCorrCoef().to(total_out.device)
+            pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
     
-        r2score = R2Score().to(total_out.device)
-        r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
+            r2score = R2Score().to(total_out.device)
+            r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
     
-        self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
-        self.log(f"{mode}_r2", r2_output, sync_dist=True)
-        self.log(f"{mode}_mse", mse, sync_dist=True)
-        self.log(f"{mode}_mae", mae, sync_dist=True)
-        self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True)
-        self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True)
+            self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
+            self.log(f"{mode}_r2", r2_output, sync_dist=True)
+            self.log(f"{mode}_mse", mse, sync_dist=True)
+            self.log(f"{mode}_mae", mae, sync_dist=True)
+            self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True)
+            self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True)
 
     def training_step(self, batch, batch_idx):
         loss = self._calculate_loss(batch, batch_idx, mode="train") 

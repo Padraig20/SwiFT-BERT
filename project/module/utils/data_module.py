@@ -179,13 +179,24 @@ class fMRIDataModule(pl.LightningDataModule):
             if task_name == 'emotionDM':
                 #meta_data = pd.read_csv(os.path.join(self.hparams.image_path, "metadata", "HBN_meta_emo_1494_240804.csv"))
                 meta_data = pd.read_csv("/global/cfs/cdirs/m4750/HBN/0_meta/EmoCodes/emocode_dm_240829.csv") #TODO: change path
-                meta_task = meta_data[['Anger_smooth_05','Happy_smooth_05','Fear_smooth_05','Sad_smooth_05','Excited_smooth_05', 'Positive_smooth_05', 'Negative_smooth_05', 'frame']].dropna()
+                
+                if self.hparams.downstream_task_type == 'regression':
+                    meta_task = meta_data[['Anger_smooth_05','Happy_smooth_05','Fear_smooth_05','Sad_smooth_05','Excited_smooth_05', 'Positive_smooth_05', 'Negative_smooth_05', 'frame']].dropna()
                             
-                for subject in os.listdir(img_root):
-                    sex = 1 # TODO check
-                    target = meta_task[['Anger_smooth_05', 'Happy_smooth_05', 'Fear_smooth_05', 'Sad_smooth_05', 'Excited_smooth_05', 'Positive_smooth_05', 'Negative_smooth_05']].values
-                    target = target[np.argsort(meta_task['frame'].values)]#[4:] #skips first 4 frames
-                    final_dict[str(subject)] = (sex, target)
+                    for subject in os.listdir(img_root):
+                        sex = 1 # TODO check
+                        target = meta_task[['Anger_smooth_05', 'Happy_smooth_05', 'Fear_smooth_05', 'Sad_smooth_05', 'Excited_smooth_05', 'Positive_smooth_05', 'Negative_smooth_05']].values
+                        target = target[np.argsort(meta_task['frame'].values)]#[4:] #skips first 4 frames
+                        final_dict[str(subject)] = (sex, target)
+                
+                else: # classification
+                    meta_task = meta_data[['Anger_smooth_05_binary_median','Happy_smooth_05_binary_median','Fear_smooth_05_binary_median','Sad_smooth_05_binary_median','Excited_smooth_05_binary_median', 'Positive_smooth_05_binary_median', 'Negative_smooth_05_binary_median', 'frame']].dropna()
+                            
+                    for subject in os.listdir(img_root):
+                        sex = 1 # TODO check
+                        target = meta_task[['Anger_smooth_05_binary_median', 'Happy_smooth_05_binary_median', 'Fear_smooth_05_binary_median', 'Sad_smooth_05_binary_median', 'Excited_smooth_05_binary_median', 'Positive_smooth_05_binary_median', 'Negative_smooth_05_binary_median']].values
+                        target = target[np.argsort(meta_task['frame'].values)]#[4:] #skips first 4 frames
+                        final_dict[str(subject)] = (sex, target)
 
         else:
             raise NotImplementedError("Dataset not supported")
