@@ -34,6 +34,7 @@ def load_model(model_name, hparams=None):
             drop_path_rate=hparams.attn_drop_rate,
             attn_drop_rate=hparams.attn_drop_rate
         )
+        return net
 
     if hparams.downstream_task_type == "regression":
         if model_name == "bert":
