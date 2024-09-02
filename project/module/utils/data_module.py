@@ -196,6 +196,7 @@ class fMRIDataModule(pl.LightningDataModule):
                         sex = 1 # TODO check
                         target = meta_task[['Anger_smooth_05_binary_median', 'Happy_smooth_05_binary_median', 'Fear_smooth_05_binary_median', 'Sad_smooth_05_binary_median', 'Excited_smooth_05_binary_median', 'Positive_smooth_05_binary_median', 'Negative_smooth_05_binary_median']].values
                         target = target[np.argsort(meta_task['frame'].values)]#[4:] #skips first 4 frames
+                        print(target)
                         final_dict[str(subject)] = (sex, target)
 
         else:
