@@ -200,7 +200,7 @@ class LitClassifier(pl.LightningModule):
             #avg_logits = torch.mean(subj_logits, dim=0)  # average over emotions E: shape: [T, E] -> [E]
             #avg_target = torch.mean(subj_target, dim=0)
             
-            avg_logits = torch.flatten(subj_logits)
+            avg_logits = torch.flatten(subj_logits) # shape: [T, E] -> [T*E]
             avg_target = torch.flatten(subj_target)
         
             subj_avg_logits.append(avg_logits)
@@ -240,11 +240,11 @@ class LitClassifier(pl.LightningModule):
             auroc_func = BinaryAUROC().to(total_out.device)
             print(subj_avg_logits >= 0)
             print(subj_targets)
-            acc = acc_func((subj_avg_logits >= 0).int(), subj_targets)
+            acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
             #print((subj_avg_logits>=0).int().cpu())
             #print(subj_targets.cpu())
-            bal_acc_sk = balanced_accuracy_score(subj_targets.cpu(), (subj_avg_logits>=0).int().cpu())
-            auroc = auroc_func(torch.sigmoid(subj_avg_logits), subj_targets)
+            bal_acc_sk = balanced_accuracy_score((subj_targets>=0).int().cpu(), (subj_avg_logits>=0).int().cpu())
+            auroc = auroc_func(torch.sigmoid(subj_avg_logits), torch.sigmoid(subj_targets))
 
             self.log(f"{mode}_acc", acc, sync_dist=True)
             self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
