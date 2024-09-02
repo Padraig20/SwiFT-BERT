@@ -27,6 +27,6 @@ class LinearLayerClf(nn.Module):
         
         output = self.fc(x)  # Shape: (b, t, num_classes)
         
-        output = torch.sigmoid(output) # Shape: (b, t, num_classes), probabilities [0,1] for each class
+        #output = torch.sigmoid(output) # Shape: (b, t, num_classes), probabilities [0,1] for each class
         
         return output
