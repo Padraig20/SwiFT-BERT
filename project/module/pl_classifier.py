@@ -188,7 +188,7 @@ class LitClassifier(pl.LightningModule):
             #avg_target = torch.mean(subj_target, dim=0)
             
             avg_logits = torch.flatten(subj_logits, dim=0)
-            avg_target = torch.flatten(subj_logits, dim=0)
+            avg_target = torch.flatten(subj_target, dim=0)
         
             subj_avg_logits.append(avg_logits)
             subj_targets.append(avg_target)
