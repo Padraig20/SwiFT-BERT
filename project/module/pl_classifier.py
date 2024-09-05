@@ -142,8 +142,14 @@ class LitClassifier(pl.LightningModule):
             }
         elif 'emotion' in self.hparams.downstream_task and self.hparams.downstream_task_type == 'classification':
             
-            logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
-            target = target.view(target.size(0), -1)  # (batch_size, T * E)
+            #logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
+            #target = target.view(target.size(0), -1)  # (batch_size, T * E)
+            
+            logits = logits.flatten() # (batch_size, T * E)
+            target = target.flatten() # (batch_size, T * E)
+            
+            print(logits)
+            print(target)
             
             loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
             acc = self.metric.get_accuracy_binary(logits, target)
