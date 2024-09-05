@@ -208,6 +208,9 @@ class LitClassifier(pl.LightningModule):
         # lists -> tensors
         subj_avg_logits = torch.stack(subj_avg_logits).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
         subj_targets = torch.stack(subj_targets).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
+        
+        subj_avg_logits = subj_avg_logits.flatten().squeeze()
+        subj_targets = subj_targets.flatten().squeeze()
     
         if self.hparams.downstream_task_type == 'classification' or self.hparams.scalability_check:
             if self.hparams.adjust_thresh:
@@ -235,13 +238,10 @@ class LitClassifier(pl.LightningModule):
                     self.log(f"{mode}_balacc_from_valid_thresh", bal_acc, sync_dist=True)
             else:
                 acc_func = BinaryAccuracy().to(total_out.device)
-            
-            if mode == 'test':
-                subj_avg_logits = subj_avg_logits.flatten().squeeze()
-                subj_targets = subj_targets.flatten().squeeze()
+
             auroc_func = BinaryAUROC().to(total_out.device)
-            print(subj_avg_logits)
-            print(subj_targets)
+            #print(subj_avg_logits)
+            #print(subj_targets)
             acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
             #print((subj_avg_logits>=0).int().cpu())
             #print(subj_targets.cpu())
