@@ -237,8 +237,8 @@ class LitClassifier(pl.LightningModule):
                 acc_func = BinaryAccuracy().to(total_out.device)
             
             if mode == 'test':
-                subj_avg_logits = subj_avg_logits.squeeze()
-                subj_targets = subj_targets.squeeze()
+                subj_avg_logits = subj_avg_logits.flatten().squeeze()
+                subj_targets = subj_targets.flatten().squeeze()
             auroc_func = BinaryAUROC().to(total_out.device)
             print(subj_avg_logits >= 0)
             print(subj_targets >= 0)
