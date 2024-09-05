@@ -97,17 +97,8 @@ def cli_main():
         raise Exception("Wrong logger name.")
 
     # ------------ callbacks -------------
-    # callback for emotion task
-    if "emotion" in args.downstream_task:
-        checkpoint_callback = ModelCheckpoint(
-            dirpath=dirpath,
-            monitor="valid_mse",
-            filename="checkpt-{epoch:02d}-{valid_loss:.2f}",
-            save_last=True,
-            mode="min",
-        )
     # callback for classification task
-    elif args.downstream_task_type == "classification":
+    if args.downstream_task_type == "classification":
         checkpoint_callback = ModelCheckpoint(
             dirpath=dirpath,
             monitor="valid_acc",
