@@ -191,8 +191,7 @@ class LitClassifier(pl.LightningModule):
         subj_avg_logits = []
         subj_targets = []
     
-        # TODO: do not calculate the average logits, but flatten logits and targets and calculate metrics
-        # calculate average logits and target values for each subject
+        # do not calculate the average logits, but flatten logits and targets and calculate metrics
         for subj in subjects:
             subj_logits = total_out[subj_array == subj, :, 0]  # shape: [T, E]
             subj_target = total_out[subj_array == subj, :, 1]  # shape: [T, E]
@@ -236,7 +235,10 @@ class LitClassifier(pl.LightningModule):
                     self.log(f"{mode}_balacc_from_valid_thresh", bal_acc, sync_dist=True)
             else:
                 acc_func = BinaryAccuracy().to(total_out.device)
-                
+            
+            if mode == 'test':
+                subj_avg_logits = subj_avg_logits.squeeze()
+                subj_targets = subj_targets.squeeze()
             auroc_func = BinaryAUROC().to(total_out.device)
             print(subj_avg_logits >= 0)
             print(subj_targets >= 0)
