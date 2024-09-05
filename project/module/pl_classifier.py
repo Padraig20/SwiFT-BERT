@@ -207,8 +207,8 @@ class LitClassifier(pl.LightningModule):
             subj_targets.append(avg_target)
     
         # lists -> tensors
-        subj_avg_logits = torch.stack(subj_avg_logits).to(total_out.device)  # Shape: [num_subjects, E]
-        subj_targets = torch.stack(subj_targets).to(total_out.device)  # Shape: [num_subjects, E]
+        subj_avg_logits = torch.stack(subj_avg_logits).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
+        subj_targets = torch.stack(subj_targets).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
     
         if self.hparams.downstream_task_type == 'classification' or self.hparams.scalability_check:
             if self.hparams.adjust_thresh:
