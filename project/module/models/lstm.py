@@ -9,16 +9,20 @@ class LSTM(nn.Module):
         self.fc = nn.Linear(hidden_dim, num_emotions)
     
     def forward(self, x):
-        # reshape (b, c, h, w, d, t) to (b, t, c*h*w*d)
-        x = x.flatten(start_dim=1, end_dim=4).transpose(1, 2)
+        # Shape of input x: (b, c, h, w, d, t)
         
-        # LSTM expects (batch_size, sequence_length, input_dim)
+        # Reshape (b, c, h, w, d, t) to (b, t, c*h*w*d)
+        b, c, h, w, d, t = x.shape
+        x = x.permute(0, 5, 1, 2, 3, 4)  # Move time dimension to the second position: (b, t, c, h, w, d)
+        x = x.reshape(b, t, c * h * w * d)  # Flatten spatial dimensions: (b, t, input_dim)
+        
+        # LSTM expects input of shape (batch_size, sequence_length, input_dim)
         lstm_out, (hn, cn) = self.lstm(x)
         
-        # we can use the last output from the LSTM (for each time step) or all
-        # take the last time step's output
+        # We take the output from the last time step
         last_out = lstm_out[:, -1, :]  # Shape: (b, hidden_dim)
         
+        # Pass the output of the last time step to the linear layer
         output = self.fc(last_out)  # Shape: (b, num_emotions)
         
         return output
