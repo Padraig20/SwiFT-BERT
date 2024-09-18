@@ -273,9 +273,11 @@ class LitClassifier(pl.LightningModule):
                     self.log(f"{mode}_balacc_from_valid_thresh", bal_acc, sync_dist=True)
             else:
                 acc_func = BinaryAccuracy().to(total_out.device)
+            
+            auroc_func = BinaryAUROC().to(total_out.device)
                 
             if not self.hparams.evaluate_separately:
-                auroc_func = BinaryAUROC().to(total_out.device)
+                #auroc_func = BinaryAUROC().to(total_out.device)
                 #print(subj_avg_logits)
                 #print(subj_targets)
                 acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
