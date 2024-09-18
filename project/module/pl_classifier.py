@@ -331,6 +331,7 @@ class LitClassifier(pl.LightningModule):
                     #preds_group = subj_avg_logits[..., i]
                     #targets_group = subj_targets[..., i]
                     
+                    print(subj_avg_logits.shape, subj_targets.shape)
                     print(
                         f"preds_group: {preds_group.shape}, targets_group: {targets_group.shape}"
                     )
