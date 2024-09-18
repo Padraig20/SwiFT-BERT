@@ -194,6 +194,8 @@ class LitClassifier(pl.LightningModule):
                 for i in range(self.hparams.target_dim):
                     logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
                     target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    
+                    print(i, logits_group.shape, target_group.shape)
 
                     loss = F.binary_cross_entropy_with_logits(logits_group, target_group)  # target is float
 
