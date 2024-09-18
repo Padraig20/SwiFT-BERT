@@ -121,37 +121,72 @@ class LitClassifier(pl.LightningModule):
 
         if 'emotion' in self.hparams.downstream_task and self.hparams.downstream_task_type == 'regression':
 
-            logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
-            target = target.view(target.size(0), -1)  # (batch_size, T * E)
+            if not self.hparams.evaluate_separately:
+                logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
+                target = target.view(target.size(0), -1)  # (batch_size, T * E)
 
-            if self.hparams.loss_type == 'mse':
-                loss = F.mse_loss(logits, target)
-            elif self.hparams.loss_type == 'mae':
-                loss = F.l1_loss(logits, target)
+                if self.hparams.loss_type == 'mse':
+                    loss = F.mse_loss(logits, target)
+                elif self.hparams.loss_type == 'mae':
+                    loss = F.l1_loss(logits, target)
 
-            within_subj_loss = loss
+                within_subj_loss = loss
 
-            mse = F.mse_loss(logits, target)
-            l1 = F.l1_loss(logits, target)
+                mse = F.mse_loss(logits, target)
+                l1 = F.l1_loss(logits, target)
 
-            result_dict = {
-                f"{mode}_loss": loss,
-                f"{mode}_mse": mse, 
-                f"{mode}_l1_loss": l1,
-                f"{mode}_within_subj_loss": within_subj_loss.item(),
-            }
+                result_dict = {
+                    f"{mode}_loss": loss,
+                    f"{mode}_mse": mse, 
+                    f"{mode}_l1_loss": l1,
+                    f"{mode}_within_subj_loss": within_subj_loss.item(),
+                }
+            else:
+                for i in range(self.hparams.target_dim):
+                    logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+
+                if self.hparams.loss_type == 'mse':
+                    loss = F.mse_loss(logits_group, target_group)
+                elif self.hparams.loss_type == 'mae':
+                    loss = F.l1_loss(logits_group, target_group)
+
+                within_subj_loss = loss
+
+                mse = F.mse_loss(logits_group, target_group)
+                l1 = F.l1_loss(logits_group, target_group)
+
+                self.log(f"{mode}_loss_{i}", loss, sync_dist=True)
+                self.log(f"{mode}_mse_{i}", mse, sync_dist=True)
+                self.log(f"{mode}_l1_loss_{i}", l1, sync_dist=True)
+                self.log(f"{mode}_within_subj_loss_{i}", within_subj_loss.item(), sync_dist=True)
+        
+        
         elif 'emotion' in self.hparams.downstream_task and self.hparams.downstream_task_type == 'classification':
             
-            logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
-            target = target.view(target.size(0), -1)  # (batch_size, T * E)
+            if not self.hparams.evaluate_separately:
             
-            loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
-            acc = self.metric.get_accuracy_binary(logits, target)
+                logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
+                target = target.view(target.size(0), -1)  # (batch_size, T * E)
             
-            result_dict = {
-            f"{mode}_loss": loss,
-            f"{mode}_acc": acc,
-            }
+                loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
+                acc = self.metric.get_accuracy_binary(logits, target)
+            
+                result_dict = {
+                f"{mode}_loss": loss,
+                f"{mode}_acc": acc,
+                }
+            else:
+                for i in range(self.hparams.target_dim):
+                    logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+
+                    loss = F.binary_cross_entropy_with_logits(logits_group, target_group)  # target is float
+
+                    acc = self.metric.get_accuracy_binary(logits_group, target_group)
+
+                    self.log(f"{mode}_loss_{i}", loss, sync_dist=True)
+                    self.log(f"{mode}_acc_{i}", acc, sync_dist=True)
             
         elif self.hparams.downstream_task_type == 'classification' or self.hparams.scalability_check:
             loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
@@ -238,53 +273,111 @@ class LitClassifier(pl.LightningModule):
                     self.log(f"{mode}_balacc_from_valid_thresh", bal_acc, sync_dist=True)
             else:
                 acc_func = BinaryAccuracy().to(total_out.device)
+                
+            if not self.hparams.evaluate_separately:
+                auroc_func = BinaryAUROC().to(total_out.device)
+                #print(subj_avg_logits)
+                #print(subj_targets)
+                acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
+                print((subj_avg_logits>=0).int().cpu())
+                #print(subj_targets.cpu())
+                bal_acc_sk = balanced_accuracy_score((subj_targets>=0).int().cpu(), (subj_avg_logits>=0).int().cpu())
+                auroc = auroc_func(torch.sigmoid(subj_avg_logits), torch.sigmoid(subj_targets))
 
-            auroc_func = BinaryAUROC().to(total_out.device)
-            #print(subj_avg_logits)
-            #print(subj_targets)
-            acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
-            #print((subj_avg_logits>=0).int().cpu())
-            #print(subj_targets.cpu())
-            bal_acc_sk = balanced_accuracy_score((subj_targets>=0).int().cpu(), (subj_avg_logits>=0).int().cpu())
-            auroc = auroc_func(torch.sigmoid(subj_avg_logits), torch.sigmoid(subj_targets))
+                self.log(f"{mode}_acc", acc, sync_dist=True)
+                self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
+                self.log(f"{mode}_AUROC", auroc, sync_dist=True)
 
-            self.log(f"{mode}_acc", acc, sync_dist=True)
-            self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
-            self.log(f"{mode}_AUROC", auroc, sync_dist=True)
+            else:
+                for i in range(self.hparams.target_dim):
+                    preds_group = subj_avg_logits[i::self.hparams.target_dim]
+                    targets_group = subj_targets[i::self.hparams.target_dim]
+    
+                    preds_group_binary = (preds_group >= 0).int()
+                    targets_group_binary = (targets_group >= 0).int()
+    
+                    acc = acc_func(preds_group_binary, targets_group_binary)
+    
+                    bal_acc_sk = balanced_accuracy_score(targets_group_binary.cpu(), preds_group_binary.cpu())
+    
+                    auroc = auroc_func(torch.sigmoid(preds_group), torch.sigmoid(targets_group))
+    
+                    self.log(f"{mode}_acc_{i}", acc, sync_dist=True)
+                    self.log(f"{mode}_balacc_{i}", bal_acc_sk, sync_dist=True)
+                    self.log(f"{mode}_AUROC_{i}", auroc, sync_dist=True)
             
         else: # regression
             
-            # losses
-            mse = F.mse_loss(subj_avg_logits, subj_targets)
-            mae = F.l1_loss(subj_avg_logits, subj_targets)
-    
-            # reconstruct to original scale if necessary
-            if self.hparams.label_scaling_method == 'standardization': # default
-                scale = self.scaler.scale_
-                mean = self.scaler.mean_
-                adjusted_mse = F.mse_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
-                adjusted_mae = F.l1_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
-            elif self.hparams.label_scaling_method == 'minmax':
-                data_max = self.scaler.data_max_
-                data_min = self.scaler.data_min_
-                adjusted_mse = F.mse_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
-                adjusted_mae = F.l1_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
-            else:
-                adjusted_mse = mse
-                adjusted_mae = mae
-    
-            pearson = PearsonCorrCoef().to(total_out.device)
-            pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
-    
+            pearson = PearsonCorrCoef().to(total_out.device)    
             r2score = R2Score().to(total_out.device)
-            r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
+            
+            if not self.hparams.evaluate_separately:
+                # losses
+                mse = F.mse_loss(subj_avg_logits, subj_targets)
+                mae = F.l1_loss(subj_avg_logits, subj_targets)
     
-            self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
-            self.log(f"{mode}_r2", r2_output, sync_dist=True)
-            self.log(f"{mode}_mse", mse, sync_dist=True)
-            self.log(f"{mode}_mae", mae, sync_dist=True)
-            self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True)
-            self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True)
+                # reconstruct to original scale if necessary
+                if self.hparams.label_scaling_method == 'standardization': # default
+                    scale = self.scaler.scale_
+                    mean = self.scaler.mean_
+                    adjusted_mse = F.mse_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+                    adjusted_mae = F.l1_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+                elif self.hparams.label_scaling_method == 'minmax':
+                    data_max = self.scaler.data_max_
+                    data_min = self.scaler.data_min_
+                    adjusted_mse = F.mse_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
+                    adjusted_mae = F.l1_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
+                else:
+                    adjusted_mse = mse
+                    adjusted_mae = mae
+
+                pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
+                r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
+
+                self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
+                self.log(f"{mode}_r2", r2_output, sync_dist=True)
+                self.log(f"{mode}_mse", mse, sync_dist=True)
+                self.log(f"{mode}_mae", mae, sync_dist=True)
+                self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True)
+                self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True)
+                
+            else:
+                for i in range(self.hparams.target_dim):
+                    preds_group = subj_avg_logits[i::self.hparams.target_dim]
+                    targets_group = subj_targets[i::self.hparams.target_dim]
+
+                    mse = F.mse_loss(preds_group, targets_group)
+                    mae = F.l1_loss(preds_group, targets_group)
+
+                    # reconstruct to original scale if necessary
+                    if self.hparams.label_scaling_method == 'standardization':  # default
+                        scale = self.scaler.scale_
+                        mean = self.scaler.mean_
+                        adjusted_preds = preds_group * scale + mean
+                        adjusted_targets = targets_group * scale + mean
+                        adjusted_mse = F.mse_loss(adjusted_preds, adjusted_targets)
+                        adjusted_mae = F.l1_loss(adjusted_preds, adjusted_targets)
+                    elif self.hparams.label_scaling_method == 'minmax':
+                        data_max = self.scaler.data_max_
+                        data_min = self.scaler.data_min_
+                        adjusted_preds = preds_group * (data_max - data_min) + data_min
+                        adjusted_targets = targets_group * (data_max - data_min) + data_min
+                        adjusted_mse = F.mse_loss(adjusted_preds, adjusted_targets)
+                        adjusted_mae = F.l1_loss(adjusted_preds, adjusted_targets)
+                    else:
+                        adjusted_mse = mse
+                        adjusted_mae = mae
+
+                    pearson_coef = pearson(preds_group.flatten(), targets_group.flatten())
+                    r2_output = r2score(preds_group.flatten(), targets_group.flatten())
+
+                    self.log(f"{mode}_corrcoef_{i}", pearson_coef, sync_dist=True)
+                    self.log(f"{mode}_r2_{i}", r2_output, sync_dist=True)
+                    self.log(f"{mode}_mse_{i}", mse, sync_dist=True)
+                    self.log(f"{mode}_mae_{i}", mae, sync_dist=True)
+                    self.log(f"{mode}_adjusted_mse_{i}", adjusted_mse, sync_dist=True)
+                    self.log(f"{mode}_adjusted_mae_{i}", adjusted_mae, sync_dist=True)
+
 
     def training_step(self, batch, batch_idx):
         loss = self._calculate_loss(batch, batch_idx, mode="train") 
@@ -573,6 +666,8 @@ class LitClassifier(pl.LightningModule):
         group.add_argument("--head", type=str, default="linear", help="architecture for decoder head, choose from: linear, mlp, bert, lstm")
         group.add_argument("--lstm_dim", type=int, default=256, help="hidden dimension of LSTM head")
         group.add_argument("--lstm_layers", type=int, default=2, help="number of layers for LSTM head")
+        
+        group.add_argument("--evaluate_separately", action='store_true', help="whether to evaluate each emotion separately")
         
         ## BERT
         group.add_argument("--bert_num_layers", type=int, default=6, help="number of layers in BERT")
