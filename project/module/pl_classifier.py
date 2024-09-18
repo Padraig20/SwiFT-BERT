@@ -259,15 +259,13 @@ class LitClassifier(pl.LightningModule):
         subj_avg_logits = []
         subj_targets = []
         
-        print(total_out.shape)
+        print(total_out.shape) # [4, 2, 25, 7] -> s, b, t, e
     
         # do not calculate the average logits, but flatten logits and targets and calculate metrics
         for subj in subjects:
-            subj_logits = total_out[subj_array == subj, :, 0]  # shape: [T, E]
-            subj_target = total_out[subj_array == subj, :, 1]  # shape: [T, E]
-            
-            print(subj)
-            
+            subj_logits = total_out[subj_array == subj, 0]  # shape: [T, E]
+            subj_target = total_out[subj_array == subj, 1]  # shape: [T, E]
+                        
             print(subj_logits.shape, subj_target.shape)
         
             #avg_logits = torch.mean(subj_logits, dim=0)  # average over emotions E: shape: [T, E] -> [E]
