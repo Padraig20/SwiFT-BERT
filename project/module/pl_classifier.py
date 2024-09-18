@@ -194,8 +194,11 @@ class LitClassifier(pl.LightningModule):
                 print(logits.shape, target.shape)
                 print(logits.view(logits.size(0), -1).shape, target.view(target.size(0), -1).shape)
                 for i in range(self.hparams.target_dim):
-                    logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
-                    target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    #logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    #target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    
+                    logits_group = logits[..., i]  # Shape: [batch_size, temporal_size]
+                    target_group = target[..., i]
                     
                     print(i, logits_group.shape, target_group.shape)
 
