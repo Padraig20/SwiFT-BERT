@@ -13,4 +13,4 @@ RESUME_ARGS=""
 
 python project/main.py $TRAINER_ARGS $MAIN_ARGS $DEFAULT_ARGS $DATA_ARGS $OPTIONAL_ARGS $RESUME_ARGS \
   --dataset_split_num 1 --seed 1 --learning_rate 5e-5 --depths 2 2 6 2 --embed_dim 36 \
-  --sequence_length 20 --first_window_size 4 4 4 1 --window_size 4 4 4 1 --img_size 96 96 96 254
+  --sequence_length 20 --first_window_size 4 4 4 1 --window_size 4 4 4 1 --img_size 96 96 96 255
