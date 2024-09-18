@@ -144,9 +144,12 @@ class LitClassifier(pl.LightningModule):
             else:
                 result_dict = {}
                 for i in range(self.hparams.target_dim):
-                    logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
-                    target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    #logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
+                    #target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
 
+                    logits_group = logits[..., i]
+                    target_group = target[..., i]
+                    
                     if self.hparams.loss_type == 'mse':
                         loss = F.mse_loss(logits_group, target_group)
                     elif self.hparams.loss_type == 'mae':
@@ -324,6 +327,13 @@ class LitClassifier(pl.LightningModule):
                 for i in range(self.hparams.target_dim):
                     preds_group = subj_avg_logits[i::self.hparams.target_dim]
                     targets_group = subj_targets[i::self.hparams.target_dim]
+                    
+                    #preds_group = subj_avg_logits[..., i]
+                    #targets_group = subj_targets[..., i]
+                    
+                    print(
+                        f"preds_group: {preds_group.shape}, targets_group: {targets_group.shape}"
+                    )
     
                     preds_group_binary = (preds_group >= 0).int()
                     targets_group_binary = (targets_group >= 0).int()
