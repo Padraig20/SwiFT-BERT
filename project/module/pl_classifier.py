@@ -325,21 +325,20 @@ class LitClassifier(pl.LightningModule):
             
             auroc_func = BinaryAUROC().to(total_out.device)
                 
-            if not self.hparams.evaluate_separately:
-                #auroc_func = BinaryAUROC().to(total_out.device)
-                #print(subj_avg_logits)
-                #print(subj_targets)
-                acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
-                #print((subj_avg_logits>=0).int().cpu())
-                #print(subj_targets.cpu())
-                bal_acc_sk = balanced_accuracy_score((subj_targets>=0).int().cpu(), (subj_avg_logits>=0).int().cpu())
-                auroc = auroc_func(torch.sigmoid(subj_avg_logits), torch.sigmoid(subj_targets))
+            #auroc_func = BinaryAUROC().to(total_out.device)
+            #print(subj_avg_logits)
+            #print(subj_targets)
+            acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
+            #print((subj_avg_logits>=0).int().cpu())
+            #print(subj_targets.cpu())
+            bal_acc_sk = balanced_accuracy_score((subj_targets>=0).int().cpu(), (subj_avg_logits>=0).int().cpu())
+            auroc = auroc_func(torch.sigmoid(subj_avg_logits), torch.sigmoid(subj_targets))
 
-                self.log(f"{mode}_acc", acc, sync_dist=True)
-                self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
-                self.log(f"{mode}_AUROC", auroc, sync_dist=True)
+            self.log(f"{mode}_acc", acc, sync_dist=True)
+            self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
+            self.log(f"{mode}_AUROC", auroc, sync_dist=True)
 
-            else:
+            if self.hparams.evaluate_separately:
                 for i in range(self.hparams.target_dim):
                     preds_group = subj_avg_logits[i::self.hparams.target_dim]
                     targets_group = subj_targets[i::self.hparams.target_dim]
@@ -373,37 +372,36 @@ class LitClassifier(pl.LightningModule):
             pearson = PearsonCorrCoef().to(total_out.device)    
             r2score = R2Score().to(total_out.device)
             
-            if not self.hparams.evaluate_separately:
-                # losses
-                mse = F.mse_loss(subj_avg_logits, subj_targets)
-                mae = F.l1_loss(subj_avg_logits, subj_targets)
+            # losses
+            mse = F.mse_loss(subj_avg_logits, subj_targets)
+            mae = F.l1_loss(subj_avg_logits, subj_targets)
     
-                # reconstruct to original scale if necessary
-                if self.hparams.label_scaling_method == 'standardization': # default
-                    scale = self.scaler.scale_
-                    mean = self.scaler.mean_
-                    adjusted_mse = F.mse_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
-                    adjusted_mae = F.l1_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
-                elif self.hparams.label_scaling_method == 'minmax':
-                    data_max = self.scaler.data_max_
-                    data_min = self.scaler.data_min_
-                    adjusted_mse = F.mse_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
-                    adjusted_mae = F.l1_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
-                else:
-                    adjusted_mse = mse
-                    adjusted_mae = mae
-
-                pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
-                r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
-
-                self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
-                self.log(f"{mode}_r2", r2_output, sync_dist=True)
-                self.log(f"{mode}_mse", mse, sync_dist=True)
-                self.log(f"{mode}_mae", mae, sync_dist=True)
-                self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True)
-                self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True)
-                
+            # reconstruct to original scale if necessary
+            if self.hparams.label_scaling_method == 'standardization': # default
+                scale = self.scaler.scale_
+                mean = self.scaler.mean_
+                adjusted_mse = F.mse_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+                adjusted_mae = F.l1_loss(subj_avg_logits * scale + mean, subj_targets * scale + mean)
+            elif self.hparams.label_scaling_method == 'minmax':
+                data_max = self.scaler.data_max_
+                data_min = self.scaler.data_min_
+                adjusted_mse = F.mse_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
+                adjusted_mae = F.l1_loss(subj_avg_logits * (data_max - data_min) + data_min, subj_targets * (data_max - data_min) + data_min)
             else:
+                adjusted_mse = mse
+                adjusted_mae = mae
+
+            pearson_coef = pearson(subj_avg_logits.flatten(), subj_targets.flatten())
+            r2_output = r2score(subj_avg_logits.flatten(), subj_targets.flatten())
+
+            self.log(f"{mode}_corrcoef", pearson_coef, sync_dist=True)
+            self.log(f"{mode}_r2", r2_output, sync_dist=True)
+            self.log(f"{mode}_mse", mse, sync_dist=True)
+            self.log(f"{mode}_mae", mae, sync_dist=True)
+            self.log(f"{mode}_adjusted_mse", adjusted_mse, sync_dist=True)
+            self.log(f"{mode}_adjusted_mae", adjusted_mae, sync_dist=True)
+                
+            if self.hparams.evaluate_separately:
                 for i in range(self.hparams.target_dim):
                     preds_group = subj_avg_logits[i::self.hparams.target_dim]
                     targets_group = subj_targets[i::self.hparams.target_dim]
