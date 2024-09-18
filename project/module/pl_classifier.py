@@ -571,6 +571,8 @@ class LitClassifier(pl.LightningModule):
         group.add_argument("--first_window_size", nargs="+", type=int, default=[4, 4, 4, 6], help="window size in the first layer")
         
         group.add_argument("--head", type=str, default="linear", help="architecture for decoder head, choose from: linear, mlp, bert, lstm")
+        group.add_argument("--lstm_dim", type=int, default=256, help="hidden dimension of LSTM head")
+        group.add_argument("--lstm_dim", type=int, default=2, help="number of layers for LSTM head")
         
         ## BERT
         group.add_argument("--bert_num_layers", type=int, default=6, help="number of layers in BERT")

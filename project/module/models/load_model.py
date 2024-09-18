@@ -48,10 +48,10 @@ def load_model(model_name, hparams=None):
                 vocab_size=hparams.bert_vocab_size)
     elif model_name == "mlp":
         net = SimpleMLP(dims, hparams.mlp_dim, hparams.target_dim)
-    elif model_name == "linear":    
+    elif model_name == "linear":
         net = LinearLayer(dims, hparams.target_dim)
     elif model_name == "lstm":
-        net = LSTM(dims, hparams.hidden_dim, hparams.num_layers, hparams.target_dim)
+        net = LSTM(dims, hparams.lstm_dim, hparams.lstm_layers, hparams.target_dim)
     else:
         raise NameError(f"{model_name} is a wrong model name")
 
