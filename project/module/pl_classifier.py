@@ -258,11 +258,15 @@ class LitClassifier(pl.LightningModule):
 
         subj_avg_logits = []
         subj_targets = []
+        
+        print(total_out.shape)
     
         # do not calculate the average logits, but flatten logits and targets and calculate metrics
         for subj in subjects:
             subj_logits = total_out[subj_array == subj, :, 0]  # shape: [T, E]
             subj_target = total_out[subj_array == subj, :, 1]  # shape: [T, E]
+            
+            print(subj)
             
             print(subj_logits.shape, subj_target.shape)
         
