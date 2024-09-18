@@ -2,6 +2,7 @@ from .SwiFT.swin4d_transformer_ver7 import SwinTransformer4D
 from .bert import BERT
 from .mlp import SimpleMLP
 from .linear import LinearLayer
+from .lstm import LSTM
 
 def load_model(model_name, hparams=None):
     #number of transformer stages
@@ -49,6 +50,8 @@ def load_model(model_name, hparams=None):
         net = SimpleMLP(dims, hparams.mlp_dim, hparams.target_dim)
     elif model_name == "linear":    
         net = LinearLayer(dims, hparams.target_dim)
+    elif model_name == "lstm":
+        net = LSTM(dims, hparams.hidden_dim, hparams.num_layers, hparams.target_dim)
     else:
         raise NameError(f"{model_name} is a wrong model name")
 

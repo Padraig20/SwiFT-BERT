@@ -570,7 +570,7 @@ class LitClassifier(pl.LightningModule):
         group.add_argument("--attn_drop_rate", type=float, default=0, help="dropout rate of attention layers")
         group.add_argument("--first_window_size", nargs="+", type=int, default=[4, 4, 4, 6], help="window size in the first layer")
         
-        group.add_argument("--head", type=str, default="linear", help="architecture for decoder head, choose from: linear, mlp, bert")
+        group.add_argument("--head", type=str, default="linear", help="architecture for decoder head, choose from: linear, mlp, bert, lstm")
         
         ## BERT
         group.add_argument("--bert_num_layers", type=int, default=6, help="number of layers in BERT")
