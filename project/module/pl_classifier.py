@@ -256,19 +256,17 @@ class LitClassifier(pl.LightningModule):
         
         subjects = np.unique(subj_array)
         
-        print(len(subjects))
-
         subj_avg_logits = []
         subj_targets = []
         
-        print(total_out.shape) # [4, 2, 25, 7] -> s, b, t, e
+        # print(total_out.shape) # [4, 2, 25, 7] -> s, b, t, e
     
         # do not calculate the average logits, but flatten logits and targets and calculate metrics
         for subj in subjects:
             subj_logits = total_out[subj_array == subj, 0]  # shape: [T, E]
             subj_target = total_out[subj_array == subj, 1]  # shape: [T, E]
                         
-            print(subj_logits.shape, subj_target.shape)
+            #print(subj_logits.shape, subj_target.shape)
         
             #avg_logits = torch.mean(subj_logits, dim=0)  # average over emotions E: shape: [T, E] -> [E]
             #avg_target = torch.mean(subj_target, dim=0)
@@ -276,24 +274,24 @@ class LitClassifier(pl.LightningModule):
             avg_logits = torch.flatten(subj_logits) # shape: [T, E] -> [T*E]
             avg_target = torch.flatten(subj_target)
             
-            print(avg_logits.shape, avg_target.shape)
+            #print(avg_logits.shape, avg_target.shape)
         
             subj_avg_logits.append(avg_logits)
             subj_targets.append(avg_target)
     
         # lists -> tensors
         
-        print("HALLO")
-        print(subj_avg_logits)
-        print(subj_targets)
-        print("HALLO")
+        #print("HALLO")
+        #print(subj_avg_logits)
+        #print(subj_targets)
+        #print("HALLO")
         
         subj_avg_logits = torch.stack(subj_avg_logits).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
         subj_targets = torch.stack(subj_targets).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
         
-        print("HALLO")
-        print(subj_avg_logits.shape, subj_targets.shape)
-        print("HALLO")
+        #print("HALLO")
+        #print(subj_avg_logits.shape, subj_targets.shape)
+        #print("HALLO")
         
         subj_avg_logits = subj_avg_logits.flatten().squeeze()
         subj_targets = subj_targets.flatten().squeeze()
@@ -349,13 +347,16 @@ class LitClassifier(pl.LightningModule):
                     #preds_group = subj_avg_logits[..., i]
                     #targets_group = subj_targets[..., i]
                     
-                    print(subj_avg_logits.shape, subj_targets.shape)
-                    print(
-                        f"preds_group: {preds_group.shape}, targets_group: {targets_group.shape}"
-                    )
+                    #print(subj_avg_logits.shape, subj_targets.shape)
+                    #print(
+                    #    f"preds_group: {preds_group.shape}, targets_group: {targets_group.shape}"
+                    #)
     
                     preds_group_binary = (preds_group >= 0).int()
                     targets_group_binary = (targets_group >= 0).int()
+                    
+                    print(preds_group_binary)
+                    print(targets_group_binary)
     
                     acc = acc_func(preds_group_binary, targets_group_binary)
     

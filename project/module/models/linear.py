@@ -12,7 +12,5 @@ class LinearLayer(nn.Module):
         x = x.flatten(start_dim=1, end_dim=4).transpose(1, 2)
         
         output = self.fc(x)  # Shape: (b, t, num_emotions)
-        
-        print(f"OUTPUT GENERATED: {output.shape}")
-        
+                
         return output
