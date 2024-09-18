@@ -255,6 +255,8 @@ class LitClassifier(pl.LightningModule):
         """
         
         subjects = np.unique(subj_array)
+        
+        print(len(subjects))
 
         subj_avg_logits = []
         subj_targets = []
@@ -330,7 +332,7 @@ class LitClassifier(pl.LightningModule):
                 #print(subj_avg_logits)
                 #print(subj_targets)
                 acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
-                print((subj_avg_logits>=0).int().cpu())
+                #print((subj_avg_logits>=0).int().cpu())
                 #print(subj_targets.cpu())
                 bal_acc_sk = balanced_accuracy_score((subj_targets>=0).int().cpu(), (subj_avg_logits>=0).int().cpu())
                 auroc = auroc_func(torch.sigmoid(subj_avg_logits), torch.sigmoid(subj_targets))
