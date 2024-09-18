@@ -194,8 +194,8 @@ class LitClassifier(pl.LightningModule):
                 }
             else:
                 result_dict = {}
-                print(logits.shape, target.shape)
-                print(logits.view(logits.size(0), -1).shape, target.view(target.size(0), -1).shape)
+                #print(logits.shape, target.shape)
+                #print(logits.view(logits.size(0), -1).shape, target.view(target.size(0), -1).shape)
                 for i in range(self.hparams.target_dim):
                     #logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
                     #target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
@@ -203,7 +203,7 @@ class LitClassifier(pl.LightningModule):
                     logits_group = logits[..., i]  # Shape: [batch_size, temporal_size]
                     target_group = target[..., i]
                     
-                    print(i, logits_group.shape, target_group.shape)
+                    #print(i, logits_group.shape, target_group.shape)
 
                     loss = F.binary_cross_entropy_with_logits(logits_group, target_group)  # target is float
 
@@ -354,8 +354,8 @@ class LitClassifier(pl.LightningModule):
                     preds_group_binary = (preds_group >= 0).int()
                     targets_group_binary = (targets_group >= 0).int()
                     
-                    print(preds_group_binary)
-                    print(targets_group_binary)
+                    #print(preds_group_binary)
+                    #print(targets_group_binary)
     
                     acc = acc_func(preds_group_binary, targets_group_binary)
     
