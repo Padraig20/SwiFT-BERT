@@ -13,4 +13,6 @@ class LinearLayer(nn.Module):
         
         output = self.fc(x)  # Shape: (b, t, num_emotions)
         
+        print(f"OUTPUT GENERATED: {output.shape}")
+        
         return output
