@@ -142,25 +142,38 @@ class LitClassifier(pl.LightningModule):
                     f"{mode}_within_subj_loss": within_subj_loss.item(),
                 }
             else:
+                result_dict = {}
                 for i in range(self.hparams.target_dim):
                     logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
                     target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
 
+                    if self.hparams.loss_type == 'mse':
+                        loss = F.mse_loss(logits_group, target_group)
+                    elif self.hparams.loss_type == 'mae':
+                        loss = F.l1_loss(logits_group, target_group)
+
+                    within_subj_loss = loss
+
+                    mse = F.mse_loss(logits_group, target_group)
+                    l1 = F.l1_loss(logits_group, target_group)
+                    
+                    result_dict.update({
+                    f"{mode}_loss_{i}": loss.item(),
+                    f"{mode}_mse_{i}": mse.item(),
+                    f"{mode}_l1_loss_{i}": l1.item(),
+                    f"{mode}_within_subj_loss_{i}": within_subj_loss.item()
+                    })
+                logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
+                target = target.view(target.size(0), -1)  # (batch_size, T * E)
+
                 if self.hparams.loss_type == 'mse':
-                    loss = F.mse_loss(logits_group, target_group)
+                    loss = F.mse_loss(logits, target)
                 elif self.hparams.loss_type == 'mae':
-                    loss = F.l1_loss(logits_group, target_group)
-
-                within_subj_loss = loss
-
-                mse = F.mse_loss(logits_group, target_group)
-                l1 = F.l1_loss(logits_group, target_group)
-
-                self.log(f"{mode}_loss_{i}", loss, sync_dist=True)
-                self.log(f"{mode}_mse_{i}", mse, sync_dist=True)
-                self.log(f"{mode}_l1_loss_{i}", l1, sync_dist=True)
-                self.log(f"{mode}_within_subj_loss_{i}", within_subj_loss.item(), sync_dist=True)
-        
+                    loss = F.l1_loss(logits, target)
+                    
+                result_dict.update({
+                    f"{mode}_loss": loss.item(),
+                })
         
         elif 'emotion' in self.hparams.downstream_task and self.hparams.downstream_task_type == 'classification':
             
@@ -177,6 +190,7 @@ class LitClassifier(pl.LightningModule):
                 f"{mode}_acc": acc,
                 }
             else:
+                result_dict = {}
                 for i in range(self.hparams.target_dim):
                     logits_group = logits.view(logits.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
                     target_group = target.view(target.size(0), -1)[i::self.hparams.target_dim]  # (batch_size, T * E)
@@ -185,8 +199,17 @@ class LitClassifier(pl.LightningModule):
 
                     acc = self.metric.get_accuracy_binary(logits_group, target_group)
 
-                    self.log(f"{mode}_loss_{i}", loss, sync_dist=True)
-                    self.log(f"{mode}_acc_{i}", acc, sync_dist=True)
+                    result_dict.update({
+                    f"{mode}_loss_{i}": loss.item(),
+                    f"{mode}_acc_{i}": acc.item()
+                    })
+                    
+                logits = logits.view(logits.size(0), -1)  # (batch_size, T * E)
+                target = target.view(target.size(0), -1)  # (batch_size, T * E)
+                loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
+                result_dict.update({
+                    f"{mode}_loss": loss.item(),
+                })
             
         elif self.hparams.downstream_task_type == 'classification' or self.hparams.scalability_check:
             loss = F.binary_cross_entropy_with_logits(logits, target) # target is float
