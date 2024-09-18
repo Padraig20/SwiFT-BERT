@@ -277,6 +277,8 @@ class LitClassifier(pl.LightningModule):
         subj_avg_logits = torch.stack(subj_avg_logits).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
         subj_targets = torch.stack(subj_targets).to(total_out.device).squeeze()  # Shape: [num_subjects, E]
         
+        print(subj_avg_logits.shape, subj_targets.shape)
+        
         subj_avg_logits = subj_avg_logits.flatten().squeeze()
         subj_targets = subj_targets.flatten().squeeze()
     
