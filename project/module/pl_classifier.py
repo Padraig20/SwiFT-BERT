@@ -326,8 +326,8 @@ class LitClassifier(pl.LightningModule):
             auroc_func = BinaryAUROC().to(total_out.device)
                 
             #auroc_func = BinaryAUROC().to(total_out.device)
-            #print(subj_avg_logits)
-            #print(subj_targets)
+            print(subj_avg_logits)
+            print(subj_targets)
             acc = acc_func((subj_avg_logits >= 0).int(), (subj_targets >= 0).int())
             #print((subj_avg_logits>=0).int().cpu())
             #print(subj_targets.cpu())
