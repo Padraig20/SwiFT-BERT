@@ -331,8 +331,8 @@ class LitClassifier(pl.LightningModule):
             acc = acc_func((subj_avg_logits >= 0).int(), subj_targets)
             #print((subj_avg_logits>=0).int().cpu())
             #print(subj_targets.cpu())
-            bal_acc_sk = balanced_accuracy_score((subj_avg_logits>=0).int().cpu(), subj_targets)
-            auroc = auroc_func((subj_avg_logits >= 0).int().cpu(), subj_targets)
+            bal_acc_sk = balanced_accuracy_score((subj_avg_logits>=0).int().cpu(), subj_targets.cpu())
+            auroc = auroc_func((subj_avg_logits >= 0).int().cpu(), subj_targets.cpu())
 
             self.log(f"{mode}_acc", acc, sync_dist=True)
             self.log(f"{mode}_balacc", bal_acc_sk, sync_dist=True)
@@ -361,7 +361,7 @@ class LitClassifier(pl.LightningModule):
     
                     bal_acc_sk = balanced_accuracy_score(preds_group_binary.cpu(), targets_group.cpu())
     
-                    auroc = auroc_func((preds_group >= 0).int().cpu(), targets_group)
+                    auroc = auroc_func((preds_group >= 0).int().cpu(), targets_group.cpu())
                         
                     self.log(f"{mode}_acc_{i}", acc, sync_dist=True)
                     self.log(f"{mode}_balacc_{i}", bal_acc_sk, sync_dist=True)
