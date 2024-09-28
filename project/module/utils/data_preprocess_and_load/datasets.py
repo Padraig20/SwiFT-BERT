@@ -223,7 +223,7 @@ class HBN(BaseDataset):
     def _set_data(self, root, subject_dict):
         data = []
         
-        img_root = os.path.join(root, 'img')
+        img_root = os.path.join(root, 'img') 
 
         for i, subject_name in enumerate(subject_dict):
             sex, target = subject_dict[subject_name]
@@ -233,8 +233,10 @@ class HBN(BaseDataset):
             session_duration = num_frames - self.sample_duration + 1
 
             for start_frame in range(0, session_duration, self.stride):
+                if self.train and self.sliding_window_overlap:
+                    start_frame = max(0, start_frame - self.overlap)
                 data_tuple = (i, subject_name, subject_path, start_frame, self.sample_duration, num_frames, target[start_frame:min(start_frame+self.sample_duration,num_frames)], sex)
-                #print(start_frame, min(start_frame+self.sample_duration,num_frames), target[start_frame:min(start_frame+self.sample_duration,num_frames)])
+                print(start_frame, min(start_frame+self.sample_duration,num_frames), target[start_frame:min(start_frame+self.sample_duration,num_frames)])
                 data.append(data_tuple)
 
         # train dataset

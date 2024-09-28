@@ -303,6 +303,8 @@ class fMRIDataModule(pl.LightningDataModule):
         group.add_argument("--time_as_channel", action='store_true')
         group.add_argument("--limit_training_samples", type=int, default=None, help="use if you want to limit training samples")
         
+        group.add_argument("--sliding_window_overlap", type=int, default=None, help="if you want to have a specific overlap for fMRI sequences")
+        
         group.add_argument("--use_ic", action='store_true')
         group.add_argument("--input_features_path", type=str, default="default")
         group.add_argument("--input_mask_path", type=str, default="default")
