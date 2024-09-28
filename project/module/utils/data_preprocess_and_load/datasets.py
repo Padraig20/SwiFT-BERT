@@ -231,16 +231,17 @@ class HBN(BaseDataset):
             num_frames = len(glob.glob(os.path.join(subject_path,'frame_*'))) # voxel mean & std
             #num_frames = 250 # TODO remove this line, just for testing
             session_duration = num_frames - self.sample_duration + 1
-
-            for start_frame in range(0, session_duration, self.stride):
-                sf = start_frame
-                if self.train and self.sliding_window_overlap:
-                    sf = max(0, start_frame - self.sliding_window_overlap)
-                data_tuple = (i, subject_name, subject_path, sf, self.sample_duration, num_frames, target[sf:min(sf+self.sample_duration,num_frames)], sex)
-                if self.train:
-                    print(sf, min(sf+self.sample_duration,num_frames), target[sf:min(sf+self.sample_duration,num_frames)])
+            
+            if self.train and self.sliding_window_overlap:
+                for start_frame in range(0, session_duration, self.stride - self.sliding_window_overlap):
+                    data_tuple = (i, subject_name, subject_path, start_frame, self.sample_duration, num_frames, target[start_frame:min(start_frame+self.sample_duration,num_frames)], sex)
+                    print(sf, min(start_frame+self.sample_duration,num_frames), target[start_frame:min(start_frame+self.sample_duration,num_frames)])
                     #print(num_frames, self.sample_duration, self.stride, session_duration)
-                data.append(data_tuple)
+                    data.append(data_tuple)
+            else:
+                for start_frame in range(0, session_duration, self.stride):
+                    data_tuple = (i, subject_name, subject_path, start_frame, self.sample_duration, num_frames, target[start_frame:min(start_frame+self.sample_duration,num_frames)], sex)
+                    data.append(data_tuple)
 
         # train dataset
         # for regression tasks
