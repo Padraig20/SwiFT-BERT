@@ -221,7 +221,8 @@ class fMRIDataModule(pl.LightningDataModule):
                 "time_as_channel": self.hparams.time_as_channel,
                 "use_ic": self.hparams.use_ic,
                 "input_features_path": self.hparams.input_features_path,
-                "input_mask_path": self.hparams.input_mask_path} 
+                "input_mask_path": self.hparams.input_mask_path,
+                "sliding_window_overlap": self.hparams.sliding_window_overlap} 
 
         subject_dict = self.make_subject_dict()
         if os.path.exists(self.split_file_path):
