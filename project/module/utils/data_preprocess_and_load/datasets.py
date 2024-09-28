@@ -233,12 +233,13 @@ class HBN(BaseDataset):
             session_duration = num_frames - self.sample_duration + 1
 
             for start_frame in range(0, session_duration, self.stride):
+                sf = start_frame
                 if self.train and self.sliding_window_overlap:
-                    start_frame = max(0, start_frame - self.sliding_window_overlap)
-                data_tuple = (i, subject_name, subject_path, start_frame, self.sample_duration, num_frames, target[start_frame:min(start_frame+self.sample_duration,num_frames)], sex)
+                    sf = max(0, start_frame - self.sliding_window_overlap)
+                data_tuple = (i, subject_name, subject_path, sf, self.sample_duration, num_frames, target[sf:min(sf+self.sample_duration,num_frames)], sex)
                 if self.train:
-                    print(start_frame, min(start_frame+self.sample_duration,num_frames), target[start_frame:min(start_frame+self.sample_duration,num_frames)])
-                    print(num_frames, self.sample_duration, self.stride, session_duration)
+                    print(sf, min(sf+self.sample_duration,num_frames), target[sf:min(sf+self.sample_duration,num_frames)])
+                    #print(num_frames, self.sample_duration, self.stride, session_duration)
                 data.append(data_tuple)
 
         # train dataset
