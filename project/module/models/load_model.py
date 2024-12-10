@@ -49,7 +49,7 @@ def load_model(model_name, hparams=None):
     elif model_name == "mlp":
         net = SimpleMLP(dims, hparams.mlp_dim, hparams.target_dim)
     elif model_name == "linear":
-        net = LinearLayer(dims, hparams.target_dim)
+        net = LinearLayer(dims, hparams.target_dim, t)
     elif model_name == "lstm":
         net = LSTM(dims, hparams.lstm_dim, hparams.lstm_layers, hparams.target_dim)
     else:
