@@ -14,7 +14,7 @@ class LinearLayer(nn.Module):
         #(b, c, h, w, d, t) to (b, t, c*h*w*d)
         x = x.flatten(start_dim=1, end_dim=4).transpose(1, 2)
         
-        if self.time_dim == x.shape[1]:
+        if self.time_dim != x.shape[1]:
             x = self.temporal_mapping(x)
         
         output = self.fc(x)  # Shape: (b, t, num_emotions)
