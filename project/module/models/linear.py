@@ -5,6 +5,8 @@ class LinearLayer(nn.Module):
     def __init__(self, input_dim, num_emotions, time_dim_orig, time_dim_patched):
         super(LinearLayer, self).__init__()
         
+        print(f"LinearLayer: input_dim: {input_dim}, num_emotions: {num_emotions}, time_dim_orig: {time_dim_orig}, time_dim_patched: {time_dim_patched}")
+        
         self.time_dim_patched = time_dim_patched
         self.input_dim = input_dim
         self.time_dim_orig = time_dim_orig
